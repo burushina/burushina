@@ -232,28 +232,28 @@ a   { color: inherit; }
 .context__tags {
   display: flex;
   flex-direction: column;
-  /* Теги равномерно заполняют высоту картинки — обе половины одной высоты. */
-  justify-content: space-between;
-  align-items: stretch;
-  gap: var(--space-2);
+  /* Плотная группа, прижатая к верху — как пункты меню. Маленький gap,
+     теги по ширине слова (не на всю колонку), не растянуты по высоте. */
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: var(--space-1);
 }
 /* Крупные теги — только в Context (десктоп): на всю ширину половины,
    высокие, крупный шрифт. Заполняют колонку вровень с иллюстрацией. */
 @media (min-width: 901px) {
   .context__tags .tag {
-    width: 100%;
+    /* По ширине слова (как пункты меню / теги CWB), не на всю колонку. */
+    width: auto;
     justify-content: flex-start;
-    white-space: normal;
-    /* Паддинг обнимает текст плотно и кратно — как у обычных тегов, один
-       ритм для маленьких и больших. Высоту блока добирает не растягивание
-       тегов, а равные промежутки между ними (space-between на контейнере). */
-    padding: 12px 20px;
-    font-size: 30px;
-    line-height: 32px;
+    white-space: nowrap;
+    /* Текст крупный — как заголовки секций (Context = 60px). */
+    padding: 8px 20px;
+    font-size: 60px;
+    line-height: 64px;
   }
   .context__tags .tag--accent {
-    font-size: 22px;
-    line-height: 26px;
+    font-size: 60px;
+    line-height: 64px;
   }
 }
 
@@ -1362,7 +1362,7 @@ section[id] {
   padding: 0;
   background: transparent;
   border: none;
-  color: #FFFFFF;
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   z-index: 10000;
   transform: rotate(90deg);
