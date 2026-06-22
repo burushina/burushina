@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polina Burushina — Product Designer</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 fill=%27%237AA2F7%27/%3E%3C/svg%3E">
+
+<!--
+  Главная страница burushina.xyz.
+  Текст 1:1 как в оригинале, без шапок и заголовков —
+  одним блоком, разделённым пустыми строками между абзацами.
+  Синие фрагменты — ссылки.
+  
+  Типографика — наша система:
+  • размер всего блока 40/44 (pull-quote-уровень)
+  • letter-spacing 0
+  • цвет ссылок --accent (#2622EE)
+  • отступы кратны 10
+-->
+
+<style>
+  :root {
+    --bg:      #FFFFFF;
+    --fg:      #0A0A0A;
+    --accent:  #7AA2F7;
+
+    --space-1:  10px;
+    --space-2:  20px;
+    --space-3:  30px;
+    --space-4:  50px;
+    --space-5:  80px;
+    --space-6: 120px;
+    --space-7: 200px;
+    --max-w:    1600px;
+    --gutter:   20px;
+    --measure:  810px;   /* мера строки для 30px (≈540×30/20) */
+
+    --sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    --dur-fast:   150ms;
+    --ease-inout: cubic-bezier(.4, 0, .2, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Focus для клавиатуры */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  /* ============================================
+     INTRO — главный и единственный блок страницы.
+     Гибрид по системе кейса:
+       font-size:       30px      (h3-уровень из шкалы)
+       line-height:     36px      (между editorial-плотным 32 и читаемым 40;
+                                   ×2 = 72 = h1 hero в кейсе — кратно ритму)
+       max-width:       800px     (extension of --measure: 540 рассчитан под body 20px,
+                                   для 30px пропорционально 540×(30/20)=810, округлено до 800.
+                                   Editorial-пропорция знаков на строку сохраняется ~50-60.)
+       margin-bottom:   30px      (--space-3, пауза рубрики из шкалы)
+     ============================================ */
+  .intro {
+    /* Записка на главной — отцентрирована по вертикали, поэтому поля
+       сверху и снизу равны и осмысленны (раньше блок «висел» в углу).
+       justify-content: center с min-height на весь экран; на коротких
+       экранах (контент выше вьюпорта) центрирование не режет — см. ниже. */
+    max-width: calc(var(--max-w) + 2 * var(--gutter));
+    margin: 0 auto;
+    min-height: 100vh;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px var(--gutter);
+    /* Крупнее (34/42) — текст весомее, заполняет экран; ритм кратен сетке. */
+    font-size: 34px;
+    line-height: 42px;
+    letter-spacing: 0;
+    font-weight: 400;
+    color: var(--fg);
+  }
+  /* Читаемая мера строки — текст не растягивается на весь экран. */
+  .intro > * {
+    max-width: 960px;
+  }
+
+  /* Между параграфами 30px = --space-3 = пауза рубрики.
+     Это структурный отступ из шкалы, не «пустая строка». */
+  .intro p {
+    margin: 0 0 var(--space-3);
+  }
+  .intro p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Ссылки — синий accent, без подчёркивания.
+     На hover становятся чёрными — типографически "тише". */
+  .intro a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease-inout);
+  }
+  .intro a:hover {
+    color: var(--fg);
+  }
+
+  /* ============================================
+     МОБИЛКА — h3 на мобиле в кейсе = 24/28.
+     Берём те же числа.
+     ============================================ */
+  @media (max-width: 600px) {
+    .intro {
+      min-height: 0;
+      justify-content: flex-start;
+      padding: var(--space-4) var(--space-2) var(--space-5);
+      font-size: 24px;
+      line-height: 28px;
+    }
+    /* Между параграфами — 20px (--space-2, body-ритм на мобиле) */
+    .intro p {
+      margin-bottom: var(--space-2);
+    }
+  }
+
+  @media (max-width: 380px) {
+    .intro {
+      font-size: 22px;
+      line-height: 26px;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+  <main class="intro">
+    <p>
+      Hi! I'm a Senior Product Designer working on complex products end to end. You probably won't spend much time here, so let me help you navigate.
+    </p>
+
+    <p>
+      <a href="case-1.html" data-hover-shuffle>Here's one of my favorite cases</a> &mdash; connecting messy product data into one coherent network. <a href="case-2.html" data-hover-shuffle>A large-scale international one</a> &mdash; rebuilding product creation from the ground up. <a href="case-3.html" data-hover-shuffle>The most recent</a> &mdash; an app for teams to discover their strengths.
+    </p>
+
+    <p>
+      On the side, <a href="#" data-hover-shuffle>I explore design beyond product UI</a> &mdash; physical events and virtual worlds.
+    </p>
+
+    <p>
+      Thanks for being here,<br>
+      Polina
+    </p>
+  </main>
+
+<script>
+/* === HOVER SHUFFLE EFFECT ===
+   Фиксированная длительность ~400ms независимо от длины текста.
+   За каждый тик "закрепляется" пропорциональное число символов слева. */
+(function() {
+  // Сужённый алфавит — только буквы средней ширины. Без широких (M W m w)
+      // и узких (I l i 1 j f t). Иначе во время random-фазы общая ширина текста
+      // прыгает (M в 2 раза шире i), длинные ссылки переносятся на новую строку.
+      const CHARS = 'aceonsuvxz';
+  const DURATION = 400;  // ms — общая длительность
+  const TICK_MS = 30;    // как часто меняются рандомные буквы
+  
+  function randomChar() {
+    return CHARS[Math.floor(Math.random() * CHARS.length)];
+  }
+  
+  function shuffleText(el) {
+    if (el.dataset.shuffling === '1') return;
+    const fullText = el.dataset.originalText || el.textContent;
+    if (!el.dataset.originalText) el.dataset.originalText = fullText;
+    el.dataset.shuffling = '1';
+
+    const total = fullText.length;
+    const totalTicks = Math.ceil(DURATION / TICK_MS);
+    const charsPerTick = total / totalTicks;
+    let tick = 0;
+
+    // Признак «перемешиваемой» позиции: обычные буквы/цифры.
+    // Пробелы, неразрывные пробелы и не-ASCII (эмодзи, →) остаются на месте.
+    const isFixedSlot = (ch) =>
+      ch === ' ' || ch === '\u00a0' || ch.charCodeAt(0) > 127;
+
+    const interval = setInterval(() => {
+      tick++;
+      const resolved = Math.min(total, Math.floor(tick * charsPerTick));
+
+      // Собираем «пул» оставшихся букв (из ещё не закреплённого хвоста)
+      // и перемешиваем его — заполняем ими незакреплённые позиции.
+      // Так используются ТОЛЬКО буквы самого текста: ширина не меняется.
+      const pool = [];
+      for (let i = resolved; i < total; i++) {
+        const ch = fullText[i];
+        if (!isFixedSlot(ch)) pool.push(ch);
+      }
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+      }
+
+      let result = '';
+      let p = 0;
+      for (let i = 0; i < total; i++) {
+        const ch = fullText[i];
+        if (i < resolved) result += ch;
+        else if (isFixedSlot(ch)) result += ch;
+        else result += pool[p++];
+      }
+      el.textContent = result;
+      if (resolved >= total) {
+        clearInterval(interval);
+        el.textContent = fullText;
+        el.dataset.shuffling = '0';
+      }
+    }, TICK_MS);
+  }
+  
+  // На мобиле перебор отключён — там нет hover, тач-триггеры глючат.
+  function attachShuffle() {
+    if (window.matchMedia('(max-width: 600px)').matches) return;
+    document.querySelectorAll('[data-hover-shuffle]').forEach(el => {
+      el.addEventListener('mouseenter', () => shuffleText(el));
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachShuffle);
+  } else {
+    attachShuffle();
+  }
+})();
+</script>
+
+</body>
+</html>
