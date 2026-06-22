@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 695 282" width="695" height="282" preserveAspectRatio="xMidYMid meet">
+  <rect width="695" height="282" fill="#000000"/>
+
+  <g opacity="0">
+    <path d="M0 140.5L525.75 93.3016V187.698L0 140.5Z" fill="#FF9D64"/>
+    <animate attributeName="opacity" values="0;1;1;1;1;1;1" keyTimes="0;0.167;0.333;0.5;0.667;0.833;1" dur="3.5s" repeatCount="indefinite"/>
+  </g>
+
+  <g opacity="0">
+    <rect x="525.006" y="81.0781" width="170" height="139" fill="#F7768E"/>
+    <circle cx="674.592" cy="81.3405" r="20.3131" fill="#F7768E"/>
+    <circle cx="625.641" cy="81.3405" r="20.3131" fill="#F7768E"/>
+    <rect x="525.004" y="61" width="101" height="34" fill="#F7768E"/>
+    <path d="M525.006 61H395.006L525.006 85V61Z" fill="#F7768E"/>
+    <path d="M525.006 85H395.006L525.006 109V85Z" fill="#F7768E"/>
+    <path d="M525.006 109H395.006L525.006 133V109Z" fill="#F7768E"/>
+    <path d="M525.006 220.074H395.006L525.006 196.074V220.074Z" fill="#F7768E"/>
+    <path d="M525.006 196.078H395.006L525.006 172.078V196.078Z" fill="#F7768E"/>
+    <path d="M525.006 172.078H395.006L525.006 148.078V172.078Z" fill="#F7768E"/>
+    <path d="M575.693 158.099C575.693 142.006 588.739 128.961 604.831 128.961H694.908V187.236H604.831C588.739 187.236 575.693 174.191 575.693 158.099Z" fill="black"/>
+    <path d="M626.637 61.6875C615.419 61.6875 606.324 70.782 606.324 82.0006H646.95C646.95 70.782 637.856 61.6875 626.637 61.6875Z" fill="#F7768E"/>
+    <animate attributeName="opacity" values="0;0;1;1;1;1;1" keyTimes="0;0.167;0.333;0.5;0.667;0.833;1" dur="3.5s" repeatCount="indefinite"/>
+  </g>
+
+  <g opacity="0">
+    <path d="M695.004 220.078H670.004V244.078L695.004 220.078Z" fill="#BB9AF7"/>
+    <path d="M671.004 220.078H646.004V244.078L671.004 220.078Z" fill="#BB9AF7"/>
+    <path d="M646.004 220.074H621.004V244.074L646.004 220.074Z" fill="#BB9AF7"/>
+    <path d="M621.004 220.082H597.004V244.082L621.004 220.082Z" fill="#BB9AF7"/>
+    <path d="M626.004 61H601.004V37L626.004 61Z" fill="#BB9AF7"/>
+    <path d="M601.004 61H577.004V37L601.004 61Z" fill="#BB9AF7"/>
+    <path d="M577.004 61H552.004V37L577.004 61Z" fill="#BB9AF7"/>
+    <path d="M552.004 61H527.004V37L552.004 61Z" fill="#BB9AF7"/>
+    <path d="M158.909 126.415L134.361 128.566L132.21 104.018L158.909 126.415Z" fill="#BB9AF7"/>
+    <path d="M134.364 128.567L109.816 130.719L107.665 106.171L134.364 128.567Z" fill="#BB9AF7"/>
+    <path d="M109.814 130.724L85.2656 132.875L83.1143 108.327L109.814 130.724Z" fill="#BB9AF7"/>
+    <path d="M695 129H670V154L695 129Z" fill="white"/>
+    <path d="M670 129H645V154L670 129Z" fill="white"/>
+    <path d="M645 129H620V154L645 129Z" fill="white"/>
+    <animate attributeName="opacity" values="0;0;0;1;1;1;1" keyTimes="0;0.167;0.333;0.5;0.667;0.833;1" dur="3.5s" repeatCount="indefinite"/>
+  </g>
+
+  <g opacity="0">
+    <circle cx="675.421" cy="81.8314" r="8.49155" fill="black"/>
+    <animate attributeName="opacity" values="0;0;0;0;1;1;1" keyTimes="0;0.167;0.333;0.5;0.667;0.833;1" dur="3.5s" repeatCount="indefinite"/>
+  </g>
+
+  <g opacity="0">
+    <circle cx="626.972" cy="79.9997" r="15.9841" fill="#FF9D64"/>
+    <circle cx="634.464" cy="81.1634" r="8.49155" fill="black"/>
+    <!-- pink eyelid covering top half of front eye -->
+    <path d="M626.637 61.6875C615.419 61.6875 606.324 70.782 606.324 82.0006H646.95C646.95 70.782 637.856 61.6875 626.637 61.6875Z" fill="#F7768E"/>
+    <animate attributeName="opacity" values="0;0;0;0;0;1;1" keyTimes="0;0.167;0.333;0.5;0.667;0.833;1" dur="3.5s" repeatCount="indefinite"/>
+  </g>
+</svg>
