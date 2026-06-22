@@ -1,0 +1,2588 @@
+<!--
+  ============================================================
+  Polina Burushina — Case 3 (Strengths — team app for surveys)
+  Single-file lightweight version for AI review.
+  
+  ENVIRONMENT:
+  • Static HTML+CSS (no React, no build step)
+  • Will deploy to Vercel as static site
+  • Real fonts: Apercu Pro Regular (Apercu) + Berkeley Mono (Book/Bold)
+  • Real images: 5 PNG illustrations (white linework on black, 
+    inverted via filter:invert(1) for white background)
+  
+  DESIGN INTENT:
+  • Editorial case-study, like ges-2.org / V-A-C Sreda / Frieze magazine
+  • White background, black text (recently inverted from dark theme)
+  • Blue zone in middle (screens + summary) with white text
+  
+  TYPOGRAPHIC SYSTEM (modeled after ges-2.org metrics):
+  • 10px baseline grid — все отступы кратны 10
+  • Spacing scale: 10/20/30/50/80/120/200 (×1.6 ритм)
+  • 9-column grid, max-width 963px (89×9 + 20×8)
+  • Type scale: 13 / 15 / 20 / 30 / 40 / 60 / 72
+    13 — caption на мобиле
+    15 — caption на десктопе (mono labels: /01, before/after, back-button)
+    20 — body (paragraphs, tags)
+    30 — h3 (card headers, summary text)
+    40 — pull-quote (challenges summary)
+    60 — h2 section title
+    72 — h1 hero
+  • Body 20/30 (1.5) — читаемо. Заголовки 1.0-1.1 — плотно.
+  • Длина строки ограничена 540px (≈60 знаков, editorial-стандарт)
+  • Letter-spacing убран везде кроме mono-меток (0.04em uppercase)
+  • Apercu Regular везде — иерархия размером, не весом
+  
+  KNOWN UNRESOLVED:
+  • Hero size discussion ongoing — currently 88px desktop / 56px mobile
+  • Constellation shapes: 3 black accents, rest grey at 25% opacity
+  
+  AUTHOR: Senior Product Designer Polina Burushina, burushina.xyz
+  TONE: confident, intelligent, slightly understated. Not a landing page.
+  ============================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapping how teams actually work — Polina Burushina</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 fill=%27%237AA2F7%27/%3E%3C/svg%3E">
+  <style>/* Системные шрифты вместо Apercu/Berkeley Mono — для лёгкости.
+   В реальном файле здесь @font-face с TTF/OTF. */
+
+/* ============================================
+   FONTS
+   ============================================ */
+/* ============================================
+   DESIGN TOKENS
+   ============================================ */
+:root {
+  /* Colors — инверсия: белый фон, чёрный текст */
+  --bg-dark:     #FFFFFF;                    /* раньше был #000, теперь белый фон */
+  --card-bg:     #F4F4F4;                    /* лёгкий серый для карточек */
+  --accent:      #BD93F9;                    /* акцентный */
+  --tn-red:    #F7768E;
+  --tn-pink:   #F7768E;
+  --tn-purple: #BB9AF7;
+  --tn-green:  #9ECE6A;
+  --tn-blue:   #7AA2F7;
+  --tn-cyan:   #7DCFFF;
+  --tn-muted:  #565F89;
+  --fg:          #000000;                    /* чистый чёрный — максимальный контраст на белом */
+  --muted:       rgba(10, 10, 10, 0.65);     /* подзаголовки */
+  --subtle:      rgba(10, 10, 10, 0.45);     /* labels, captions */
+
+  /* ============================================
+     SPACING — 10px baseline grid (как у ges-2.org).
+     Шкала: 10/20/30/50/80/120/200 — каждый шаг крупнее предыдущего
+     примерно в 1.6× (ритм Фибоначчи), что даёт ясную иерархию пауз
+     без «сомнительных» средних значений.
+       --space-1: внутри одного блока (label → текст)
+       --space-2: близкие элементы (text + viz)
+       --space-3: между карточками одного ряда
+       --space-4: между блоками внутри секции
+       --space-5: стандартный отступ между секциями
+       --space-6: крупные паузы (section title до контента, hero padding)
+       --space-7: большая смысловая граница (Context → Challenges)
+     ============================================ */
+  --space-1:  10px;
+  --space-2:  20px;
+  --space-3:  30px;
+  --space-4:  50px;
+  --space-5:  80px;
+  --space-6: 120px;
+  --space-7: 200px;
+
+  /* Layout — 9-колоночная сетка как у ges-2 (column 89, gutter 20).
+     963px = 9×89 + 8×20. Контент-зона уже чем у нас была (1200),
+     это собирает страницу плотнее — текст не растягивается
+     на всю ширину экрана и читается как разворот журнала. */
+  --max-w:    1600px;
+  --col:      89px;      /* ширина одной колонки */
+  --gutter:   20px;      /* промежуток между колонками */
+  --measure:  540px;     /* комфортная длина строки для body 20px (≈60 знаков) */
+
+  /* Type families */
+  --sans:   'Apercu', system-ui, sans-serif;
+  --mono:   'Berkeley Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --serif:  'Instrument Serif', 'Times New Roman', serif;   /* для editorial заголовков */
+
+  /* ============================================
+     MOTION — единая шкала длительностей и easings.
+     Раньше длительности были разнобоем: 100/200/250/300/600/700/800ms.
+     Теперь только 3 уровня:
+       fast — мелкие interactive (hover, focus)
+       mid  — появление при скролле, transition между состояниями
+       slow — крупные entrance (гирлянда, отрисовка линий)
+     Easings:
+       out   — для появлений: медленный финиш, элемент «приземляется»
+       inout — для hover: симметричное, элемент «реагирует»
+     ============================================ */
+  --dur-fast:   150ms;
+  --dur-mid:    300ms;
+  --dur-slow:   600ms;
+  --ease-out:   cubic-bezier(.2, .7, .2, 1);
+  --ease-inout: cubic-bezier(.4, 0, .2, 1);
+}
+
+/* ============================================
+   RESET
+   ============================================ */
+* { box-sizing: border-box; }
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg-dark);
+  color: var(--fg);
+  font-family: var(--sans);
+  /* Базовый кегль 20 / interline 30 — приём ges-2.
+     20 — крупно по меркам веба (обычно 16-18), 30 — кратно baseline,
+     даёт читаемый и одновременно «весомый» текст.
+     Все элементы наследуются от этой базы. */
+  font-size: 20px;
+  line-height: 20px;
+  -webkit-font-smoothing: antialiased;
+  /* Кроссфейд темы: фон и текст плавно перетекают при смене .theme-dark */
+  transition: background-color var(--dur-mid) var(--ease-inout),
+              color var(--dur-mid) var(--ease-inout);
+}
+/* Тёмная тема всей страницы — инверсия цветовых токенов. */
+body.theme-dark {
+  --bg-dark: #000000;
+  --fg:      #FFFFFF;
+  --muted:   rgba(255, 255, 255, 0.85);
+  --subtle:  rgba(255, 255, 255, 0.6);
+}
+img { max-width: 100%; display: block; }
+a   { color: inherit; }
+
+/* Выделение текста — в фирменный синий */
+::selection {
+  background: #000000;
+  color: #FFFFFF;
+}
+/* В синей зоне фон уже синий — выделение тем же синим невидимо.
+   Делаем выделение чёрным с белым текстом — это контрастно к синему
+   и читается одинаково чётко на всех элементах в blue-zone. */
+.blue-zone ::selection {
+  background: #FFFFFF;
+  color: #000000;
+}
+
+/* Focus для клавиатуры (не показывается при клике мышью).
+   Outline 2px синего — accessibility-стандарт. Без скруглений в editorial-стиле. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ============================================
+   TYPOGRAPHY SCALE — арифметическая шкала на 10px-сетке.
+   Единая система пропорций (по образцу ges-2.org):
+
+   13  — caption / mono labels (01 /, before, after, /01)
+   15  — small body (теги, мелкие подписи)
+   20  — body — ВЕСЬ основной текст параграфов / line-height 30
+   30  — h3 (заголовки карточек)         / line-height 32  (1.06)
+   40  — pull-quote (challenges summary) / line-height 44  (1.1)
+   60  — h2 section title                / line-height 64  (1.06)
+   88  — h1 hero                         / line-height 88  (1.0)
+
+   Все размеры фиксированные — никакого clamp/fluid.
+   Это даёт ощущение «дорого», как в журнале:
+   страница имеет один вид на десктопе, не «течёт».
+   На мобиле — отдельная отбитая шкала.
+
+   Letter-spacing: близкий к 0 везде.
+   Дизайнерский трюк -0.02em убран — он нужен для системных шрифтов,
+   а Apercu/Diagramatika уже настроены типографом.
+   Остаётся только +0.04em uppercase для caption-меток.
+   ============================================ */
+
+/* ============================================
+   HERO
+   ============================================ */
+/* HERO — простой верхний блок с заголовком, как у ges-2.
+   Без декора (дракон/SVG-фигуры удалены), заголовок выровнен влево. */
+.hero {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  /* Top 80 даёт место для фиксированного меню сверху (~40 высоты) + 40 воздуха
+     между меню и заголовком. Bottom 40 — пауза до первой секции. */
+  padding: 60px var(--space-2) 40px;
+}
+.hero__title {
+  font-family: var(--sans);
+  font-weight: 400;
+  /* H1 60/60 — равно H2. У ges-2 эти уровни почти не различаются. */
+  font-size: 60px;
+  line-height: 60px;
+  letter-spacing: 0;
+  margin: 0;
+  color: var(--fg);
+  text-wrap: balance;
+}
+
+/* ============================================
+   HERO-DRAGON — главная иллюстрация (растровый webp).
+   Точные координаты из Tilda-оригинала: 
+     left=-223px (заходит за левый край), top=227px,
+     width=391px, height=435px на холсте 1024×680.
+   Высота auto — сохраняем aspect-ratio картинки автоматически.
+   Z-index 2 — над SVG-композицией (z=1), под текстом hero (z=2 у hero__inner).
+   ============================================ */
+.hero-dragon {
+  position: absolute;
+  left:   -21.78%;   /* -223 / 1024 */
+  top:    33.38%;    /*  227 /  680 */
+  width:  38.18%;    /*  391 / 1024 */
+  height: auto;
+  pointer-events: none;
+  z-index: 2;
+  /* Дракон в исходнике на тёмном фоне со светлым рисунком.
+     На инвертированном (белом) hero — invert(1) переворачивает
+     цвета: тёмный фон → белый, светлая фигура → тёмная.
+     В сочетании с белым hero фон дракона сливается с фоном hero,
+     а сама фигура читается как тёмный силуэт. */
+  filter: invert(1);
+}
+/* На мобильных скрываем — экрана недостаточно, дракон будет накладываться на текст */
+@media (max-width: 700px) {
+  .hero-dragon { display: none; }
+}
+
+/* ============================================
+   HERO-SVG — единый SVG-холст с композицией Strengths.
+   viewBox 1024×680 — те же координаты что у Tilda.
+   preserveAspectRatio="xMidYMid meet" — сохраняет пропорции,
+   центрирует по центру, вписывает в контейнер без обрезки.
+   
+   SVG занимает весь .hero (position: absolute, inset: 0).
+   Все фигуры внутри имеют свои координаты в системе viewBox —
+   при ресайзе всё масштабируется ОДНОВРЕМЕННО, ничего не плывёт.
+   ============================================ */
+.hero-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  /* meet режим может оставлять пустые поля по краям — заливаем
+     цветом hero, чтобы не было видно границ SVG */
+}
+
+/* Базовые свойства фигуры. Координаты задаются в исходных пикселях
+   относительно холста 1024×680 — пересчитываются в проценты от hero.
+   Это даёт пропорциональное масштабирование. */
+.s-tri, .s-circ {
+  position: absolute;
+  /* x, y, w, h — пиксели от левого верха холста 1024×680.
+     Перевод в %: x / 1024 * 100, y / 680 * 100. */
+  left:   calc(var(--x) / 1024 * 100%);
+  top:    calc(var(--y) / 680 * 100%);
+  width:  calc(var(--w) / 1024 * 100%);
+  height: calc(var(--h) / 680 * 100%);
+  display: block;
+}
+
+/* Цвета фигур */
+.s-grey   { background: rgba(140, 140, 140, 1); }
+.s-white  { background: #FFFFFF; }
+.s-shadow { background: #565F89; opacity: 0.3; }
+
+/* КРУГИ — простой border-radius */
+.s-circ {
+  border-radius: 50%;
+}
+
+/* ТРЕУГОЛЬНИКИ — «осколочные» формы через clip-path.
+   Каждый --shape имеет свой набор точек path для разнообразия,
+   как в Tilda-оригинале (там были отдельные SVG path'ы). */
+.s-tri {
+  background: transparent;
+}
+.s-tri::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+}
+.s-tri.s-grey::before    { background: rgba(140, 140, 140, 1); }
+.s-tri.s-white::before   { background: #FFFFFF; }
+.s-tri.s-shadow::before  { background: #565F89; opacity: 1; }   /* opacity 0.3 на родителе */
+
+/* Shape 1: большой фоновый треугольник-доминанта (склон вправо-вниз) */
+.s-tri[style*="--shape: 1"]::before { clip-path: polygon(100% 0%, 0% 100%, 100% 50%); }
+/* Shape 2: вертикальный острый треугольник */
+.s-tri[style*="--shape: 2"]::before { clip-path: polygon(78% 0%, 0% 50%, 100% 100%); }
+/* Shape 3: широкий «крылатый» треугольник */
+.s-tri[style*="--shape: 3"]::before { clip-path: polygon(0% 0%, 100% 30%, 30% 100%); }
+/* Shape 4: горизонтальный продолговатый луч */
+.s-tri[style*="--shape: 4"]::before { clip-path: polygon(91% 0%, 0% 100%, 100% 35%); }
+/* Shape 5: маленький наклонный треугольник */
+.s-tri[style*="--shape: 5"]::before { clip-path: polygon(20% 0%, 100% 60%, 0% 100%); }
+/* Shape 6: тонкий горизонтальный треугольник */
+.s-tri[style*="--shape: 6"]::before { clip-path: polygon(98% 70%, 22% 0%, 0% 30%); }
+/* Shape 7: вертикальный «зуб» */
+.s-tri[style*="--shape: 7"]::before { clip-path: polygon(0% 23%, 100% 0%, 100% 100%); }
+/* Shape 8: маленький компактный треугольник */
+.s-tri[style*="--shape: 8"]::before { clip-path: polygon(0% 100%, 100% 100%, 50% 0%); }
+/* Shape 9: малый острый треугольник */
+.s-tri[style*="--shape: 9"]::before { clip-path: polygon(76% 0%, 22% 100%, 100% 30%); }
+
+/* ============================================
+   SECTION (общая обёртка)
+   Между секциями всегда одинаковый «дыхательный» отступ.
+   ============================================ */
+.section {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  /* Вертикали — 120 (--space-6). Это пауза между секциями.
+     Горизонтали — 20 (gutter), чтобы на узких десктопах текст
+     не упирался в край. На больших — реальные поля задаются max-width.
+     У ges-2: секции отделены крупным воздухом (>100px),
+     внутри — плотным ритмом 20/30. */
+  padding: 40px var(--space-2);
+}
+
+/* Моно-индекс над заголовком секции — задаётся через data-index="01" в HTML */
+.section__title {
+  font-family: var(--sans);
+  font-weight: 400;
+  /* H2 = 60/64. Контраст с body (20) ровно в 3× —
+     это математически чистое отношение, читается как «ясный шаг вверх».
+     line-height 64 (1.06) — почти плотно, но достаточно
+     чтобы две строки заголовка не слипались. */
+  font-size: 60px;
+  line-height: 60px;
+  letter-spacing: 0;
+  text-align: left;
+  /* Отступ от заголовка до контента — 50 (--space-4).
+     Это «пауза рубрики»: достаточно чтобы заголовок отделился,
+     не настолько чтобы потерял связь с тем что под ним.
+     40px кратно baseline 20 — единая система ges-2. */
+  margin: 0 0 40px;
+  color: var(--fg);
+  position: relative;
+  text-wrap: balance;
+}
+/* Моно-индекс /01 над заголовком — caption-уровень (15/24).
+   15px вместо 13: на caption-уровне 13 ощущается мелко
+   рядом с заголовком 60px, и моно с большим letter-spacing
+   на 13 «расползается».
+   letter-spacing 0.04em вместо 0.08 — Berkeley Mono сам по себе
+   широкий, 0.08 разрядка делает текст «уплывающим». */
+
+
+/* ============================================
+   CARD (общая тёмная карточка)
+   ============================================ */
+/* ============================================
+   CARD — теперь без фона и границы.
+   Текст просто на странице как в редакционной вёрстке.
+   Иерархия типографикой, воздухом. Не коробками.
+   ============================================ */
+.card {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+/* ============================================
+   CONTEXT
+   ============================================ */
+.context__top {
+  display: grid;
+  /* Равные половины: minmax(0,1fr) — колонки строго 50/50 даже если
+     длинный тег (nowrap) пытается распереть правую колонку. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-2);
+  /* пауза 60 между top и bottom */
+  margin-bottom: 60px;
+  /* обе колонки одной высоты (по картинке); теги внутри распределятся */
+  align-items: stretch;
+}
+.context__illu {
+  background: transparent;
+  border-radius: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.context__illu img {
+  display: block;
+}
+
+.context__tags {
+  display: flex;
+  flex-direction: column;
+  /* Плотная группа, прижатая к НИЗУ — низ последнего тега на одной линии
+     с низом картинки слева. Маленький gap, теги по ширине слова. */
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+/* Крупные теги — только в Context (десктоп): на всю ширину половины,
+   высокие, крупный шрифт. Заполняют колонку вровень с иллюстрацией. */
+@media (min-width: 901px) {
+  .context__tags .tag {
+    /* По ширине слова (как пункты меню / теги CWB), не на всю колонку.
+       white-space: normal + max-width 100% — длинный тег (страны) переносится
+       на 2 строки внутри половины колонки, не вылезает за край. */
+    width: auto;
+    max-width: 100%;
+    justify-content: flex-start;
+    white-space: normal;
+    /* Текст крупный — как заголовки секций (Context = 60px). */
+    padding: 8px 20px;
+    font-size: 60px;
+    line-height: 64px;
+  }
+  .context__tags .tag--accent {
+    font-size: 60px;
+    line-height: 64px;
+  }
+  .context__tags .tag--accent .tag__arrow {
+    width: 0.7em;
+    height: 0.7em;
+    flex: none;
+  }
+}
+.tag__arrow {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  vertical-align: -0.05em;
+}
+
+/* Тэг — обводка 2px вместо плашки (editorial). Размер 20/30 = body */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  /* квадратные углы — форма НЕнажимаемого (теги это span, не ссылки).
+     Нажимаемое (меню) — скруглённые капсулы. Форма кодирует функцию. */
+  border-radius: 0;
+  background: transparent;
+  border: 2px solid var(--fg);
+  font-size: 20px;
+  line-height: 20px;
+  letter-spacing: 0;
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+/* Акцентный тэг — моно 16px, высота как у обычного тега (54px) */
+.tag--accent {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 400;
+  /* line-height 20 — та же высота пилюли что у обычных тегов */
+  line-height: 20px;
+  letter-spacing: 0;
+  color: var(--fg);
+  padding: 10px 20px;
+}
+
+.context__bottom {
+  display: grid;
+  /* Те же равные половины (minmax 0 — устойчиво к длинному контенту). */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.card--text {
+  /* Без hover — это не кнопка, а текст с заголовком */
+}
+.card--text h3 {
+  font-family: var(--sans);
+  font-weight: 400;
+  /* H3 = 30/32. Это шаг вниз от h2 (60) и вверх от body (20).
+     Промежуточный уровень: «подзаголовок карточки». */
+  font-size: 30px;
+  line-height: 30px;
+  letter-spacing: 0;
+  /* 20px между h3 и параграфом под ним — стандартный body-ритм.
+     Параграф визуально «прилипает» к заголовку, они одно целое. */
+  margin: 0 0 var(--space-2);
+  text-wrap: balance;
+}
+.card--text p {
+  margin: 0;
+  /* Body 20/20 — ges-2-сетка, плотный ритм (line-height = font-size). */
+  font-size: 20px;
+  line-height: 20px;
+  letter-spacing: 0;
+  color: var(--fg);
+  /* Длина строки — 540px (≈60 знаков). Классический editorial-предел.
+     Без этого текст раскатывается на всю карточку и читается «дёшево». */
+  max-width: var(--measure);
+}
+
+/* ============================================
+   CHALLENGES
+   ============================================ */
+.challenges {
+  list-style: none;
+  margin: 0; padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  /* Gap 20 = gutter ges-2-сетки. Все горизонтальные паузы между
+     дочерними элементами в любом grid'е — единое значение 20. */
+  gap: var(--space-2);
+}
+.challenges li {
+  display: flex;
+  flex-direction: column;
+  /* Между иллюстрацией и подписью — 20 (body-ритм).
+     Они одно целое, не нужна крупная пауза. */
+  gap: var(--space-2);
+}
+.challenges__illu {
+  background: transparent;
+  border-radius: 0;
+  aspect-ratio: 1;
+  /* Картинка прижата влево — её левый край совпадает с левым краем
+     подписи под ней (центрирование сдвигало бы её вправо). */
+  max-width: 260px;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.challenges__illu img {
+  width: 100%; height: 100%; object-fit: contain;
+}
+.card--small {
+  /* Подпись под иллюстрацией — body 20/30. Без размерных понижений:
+     это не «caption», а суть challenge'а, она равна по весу
+     основным абзацам в Context. */
+  font-size: 20px;
+  line-height: 20px;
+  letter-spacing: 0;
+  padding: 0;
+  margin: 0;
+  color: var(--fg);
+  text-wrap: balance;
+}
+/* Hover убираем — текст не «нажимная кнопка» */
+.challenges li .card--small:hover {
+  background: transparent;
+}
+.challenges__summary {
+  /* Pull-quote 30/40 — голос автора. Влево, как вся страница (было по центру). */
+  margin: var(--space-5) 0 0;
+  text-align: left;
+  max-width: var(--measure);
+  color: var(--fg);
+  font-size: 30px;
+  line-height: 40px;
+  letter-spacing: 0;
+  padding: 0;
+  background: transparent;
+  text-wrap: balance;
+}
+/* Веб: цитата в прямоугольной рамке (как теги) во всю ширину сетки,
+   крупный текст, разбита на левую и правую часть для читабельности. */
+@media (min-width: 901px) {
+  .challenges__summary {
+    max-width: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-5);
+    border: 2px solid var(--fg);
+    /* Паддинг как у тегов — текст плотно обнимается рамкой, единый ритм. */
+    padding: 8px 20px;
+    font-size: 48px;
+    line-height: 52px;
+    text-wrap: initial;
+  }
+  .challenges__summary__l,
+  .challenges__summary__r {
+    flex: 1;
+    display: block;
+  }
+  .challenges__summary__r { text-align: right; }
+}
+/* Стрелка → в начале summary-цитаты — размер по тексту, в стиле навигации */
+.summary__arrow {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  vertical-align: -0.02em;
+  flex: none;
+}
+
+/* ============================================
+   BLUE ZONE — мягкий короткий переход + ИНВЕРСИЯ цветов внутри.
+   ============================================ */
+.blue-zone {
+  position: relative;
+  /* Зона прозрачна — вся страница перекрашивается в тёмную тему
+     (.theme-dark на body) при скролле к этой секции. */
+  background: transparent;
+}
+/* Градиент 300px от белого к синему. Banding на синем — частая проблема,
+   решаю несколькими приёмами одновременно:
+   1. Промежуточные стопы каждые 12.5% — браузер интерполирует
+      между близкими точками, ступени разносятся.
+   2. Поверх — едва заметный SVG-шум через filter:url() на ::after,
+      который ломает идеально ровные полосы (dithering эффект).
+   3. Синий фон под градиентом не нужен — при последней точке 100%
+      цвет полностью переходит в --accent.
+   Числа стопов — простая линейная интерполяция:
+   #FFFFFF (255,255,255) → #2622EE (38,34,238) */
+/* Тонкий шумовой слой поверх градиента — ломает banding.
+   SVG turbulence генерирует мелкий случайный шум, opacity 0.04
+   делает его невидимым «как структура», но достаточным чтобы
+   разорвать идеальные полосы интерполяции. */
+.blue-zone > * { position: relative; z-index: 2; }
+
+/* ============================================
+   SCREENS
+   ============================================ */
+.screens {
+  /* Тот же ритм что у .section: 60 вертикали, 20 горизонт. */
+  padding: 40px var(--space-2);
+  max-width: var(--max-w);
+  margin: 0 auto;
+}
+.screens__title {
+  font-family: var(--sans);
+  font-weight: 400;
+  /* Идентично .section__title — 60/64. Семья одна. */
+  font-size: 60px;
+  line-height: 60px;
+  letter-spacing: 0;
+  text-align: left;
+  margin: 0 0 40px;
+  color: var(--fg);
+}
+
+.screens__inner {
+  display: flex;
+  flex-direction: column;
+  /* Между скриншотами — 80 (--space-5). Достаточно паузы чтобы каждый скрин
+     читался как отдельная сцена, но без избыточного простаивания. */
+  gap: 40px;
+}
+.screens__item {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  /* 20 между скрином и подписью — body-ритм */
+  gap: var(--space-2);
+  /* Выравнивание влево как ges-2: скрин начинается слева,
+     подпись — слева же, единая ось. */
+  align-items: flex-start;
+}
+.screens__item figcaption {
+  display: block;
+  color: var(--fg);
+  text-align: left;
+  /* Caption под скрином — body 20/20 */
+  font-size: 20px;
+  line-height: 20px;
+  letter-spacing: 0;
+  max-width: var(--measure);
+}
+/* Префикс «01 /» — Berkeley Mono Regular 15/30.
+   Возвращён моно для роли «номер шага», но в облегчённом весе:
+   • 15px (на 5 меньше body 20) — caption-уровень, не перебивает текст
+   • Regular 400, не Bold — без жирного «удара» при чтении
+   • color: var(--subtle) — отступает визуально, читается как метка-нумератор
+   • line-height 30 — выравнивается по baseline body, не сбивает строку
+   Это middle-ground между «без моно» (терялась роль метки) и
+   «жирный моно» (спотыкал чтение). */
+.screens__num {
+  font-family: var(--sans);
+  /* номер = часть подписи: тот же шрифт/вес/цвет/регистр, без выделения */
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 20px;
+  letter-spacing: 0;
+  color: var(--fg);
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ============================================
+   PLACEHOLDERS (на месте будущих скриншотов и иллюстраций)
+   ============================================ */
+/* Базовый плейсхолдер: серая обводка на прозрачном фоне.
+   Работает на белом фоне (Context, Challenges).
+   В синей зоне переопределяется через .blue-zone .placeholder.
+   border-radius: 0 — editorial-стиль, никаких скруглений на функциональных блоках. */
+/* В светлой зоне — placeholder это просто прозрачный контейнер с подписью.
+   Никаких обводок, скруглений, hover-эффектов. Когда картинка успешно
+   загружена — подпись скрывается через .placeholder--has-img. */
+.placeholder {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.placeholder:hover {
+  background: transparent;
+}
+.placeholder__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  z-index: 1;
+  background: #FFFFFF;
+}
+.placeholder.placeholder--has-img {
+  border: none;
+  background: transparent;
+}
+.placeholder.placeholder--has-img:hover {
+  background: transparent;
+}
+.placeholder.placeholder--has-img .placeholder__label {
+  display: none;
+}
+.placeholder--context   { aspect-ratio: 4773 / 2993; }
+.placeholder--challenge { aspect-ratio: 1 / 1; }
+.placeholder--desktop   { aspect-ratio: 16 / 9; }
+
+.blue-zone .placeholder {
+  background: transparent;
+  border: none;
+}
+.blue-zone .placeholder:hover {
+  background: transparent;
+}
+.blue-zone .placeholder__label {
+  color: rgba(255,255,255,.6);
+}
+.blue-zone .placeholder.placeholder--has-img {
+  background: transparent;
+  border: none;
+}
+.blue-zone .placeholder.placeholder--has-img:hover {
+  background: transparent;
+}
+
+/* Подпись плейсхолдера — путь к файлу в моно-шрифте. */
+.placeholder__label {
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(10, 10, 10, .45);
+  text-align: center;
+  padding: 16px;
+  word-break: break-all;
+  /* white-space: pre-wrap чтобы \n в textContent давал перенос строки */
+  white-space: pre-wrap;
+}
+/* Контекст-плейсхолдер: 4:3, иллюстрация — без скруглений (editorial) */
+.placeholder--context   { aspect-ratio: 4773 / 2993; }
+/* Challenge-плейсхолдер: 1:1, иллюстрация — без скруглений */
+.placeholder--challenge { aspect-ratio: 1 / 1; }
+/* Screens-плейсхолдер: 16:9 — здесь будет скриншот десктопного интерфейса.
+   border-radius: 8px — стандартное скругление macOS-window. Скругление здесь
+   не «декорация», а изображение формы окна. */
+.placeholder--desktop   { aspect-ratio: 16 / 9; }
+
+/* В синей зоне — белая обводка, прозрачный белый фон.
+   Это переопределение базовых цветов для контраста на ярком синем. */
+.blue-zone .placeholder {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.35);
+}
+.blue-zone .placeholder:hover {
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.5);
+}
+.blue-zone .placeholder__label {
+  color: rgba(255,255,255,.7);
+}
+/* Если в blue-zone есть placeholder с картинкой — убираем плейсхолдер-вайб. */
+.blue-zone .placeholder.placeholder--has-img {
+  background: transparent;
+  border: none;
+}
+.blue-zone .placeholder.placeholder--has-img:hover {
+  background: transparent;
+}
+
+
+.placeholder--mobile-trio {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-1);
+  background: transparent;
+  border: none;
+  padding: 0;
+  max-width: 900px;
+}
+.placeholder--mobile-trio > div {
+  aspect-ratio: 9 / 19;
+  background: rgba(255,255,255,.06);
+  border: 1.5px dashed rgba(255,255,255,.35);
+  /* 24px — скругление углов мобильного устройства.
+     Здесь скругление это форма iPhone, не декорация. */
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.placeholder--mobile-trio > div span {
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 20px;
+  letter-spacing: 0;
+  color: rgba(255,255,255,.7);
+}
+
+/* ============================================
+   SUMMARY
+   ============================================ */
+.summary {
+  max-width: var(--max-w);
+  /* padding наследуется от .section — единая мера */
+}
+/* ============================================
+   PIXEL-GRID — визуализации в Summary кейса 2.
+   Только квадраты, слипшиеся как пиксели в произвольных формах.
+   В отличие от кейса 1 где были bars/dots/triangles, здесь
+   единая система: каждая визуализация — grid из пикселей 20px.
+   Размер 20px = --space-2, кратно ритму 10.
+   ============================================ */
+.pixel-grid {
+  display: grid;
+  /* grid-template задаётся через --cols/--rows из inline-style */
+  grid-template-columns: repeat(var(--cols, 4), 20px);
+  grid-template-rows: repeat(var(--rows, 1), 20px);
+  /* gap 0 — пиксели слипшиеся, без разрывов */
+  gap: 0;
+}
+.pixel {
+  /* Position по координатам --x/--y из inline-style.
+     +1 потому что grid-column начинается с 1, не с 0. */
+  grid-column: calc(var(--x) + 1);
+  grid-row:    calc(var(--y) + 1);
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+.summary__grid {
+  display: grid;
+  /* 80px колонка для меток before/after, потом 4 равные колонки */
+  grid-template-columns: 80px repeat(4, 1fr);
+  /* column-gap 20 = gutter ges-2-сетки. Единая шкала. */
+  column-gap: var(--space-2);
+  /* row-gap 20 — между строкой col-head и первой строкой данных.
+     Между before-cell и after-cell внутри колонки добавим явно через margin. */
+  row-gap: var(--space-2);
+  /* stretch (по умолчанию у grid): все ячейки одного ряда растягиваются
+     до высоты самой высокой. В сочетании с margin-top:auto на .summary__viz
+     это гарантирует что низ всех viz одного ряда — на одной горизонтали. */
+  align-items: stretch;
+}
+.summary__col-head {
+  /* Рубрика — sans 20/20, белый */
+  font-family: var(--sans);
+  font-size: 20px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--fg);
+  /* 20 между шапкой и первой ячейкой — body-ритм. */
+  margin-bottom: var(--space-2);
+}
+/* Моно-нумерация перед именем рубрики (01-04) — отличает col-head
+   от подписей before/after, которые в той же шкале моно 13-15px.
+   Выглядит как "01 / Process setup" — рубрика читается как глава. */
+.summary__col-head[data-num]::before {
+  content: attr(data-num) " / ";
+  font-family: var(--sans);
+  font-size: 15px;
+  letter-spacing: 0;
+  color: var(--subtle);
+  margin-right: 4px;
+  vertical-align: baseline;
+}
+.summary__row-label {
+  /* Метка колонки before/after — body 20/20, как текст ячеек и col-head */
+  font-family: var(--sans);
+  font-size: 20px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--fg);
+  opacity: 0.7;
+  align-self: start;
+}
+
+/* Ячейка = текст (утверждение) + визуал (полоса/точки).
+   Архитектура выравнивания полос:
+   • Раньше: min-height на cell + flex space-between — полосы оказывались
+     на разных уровнях, потому что cell растягивался под длинный текст,
+     и полоса в этой ячейке уезжала ниже соседних.
+   • Теперь: min-height на сам ТЕКСТ (160px = 5 строк × 32 line-height).
+     Все тексты одного ряда (before или after) занимают одинаковую высоту,
+     полосы автоматически лежат на одной линии под ними.
+     160 — высота под самый длинный текст (Shipping meant finding...). */
+.summary__cell {
+  display: flex;
+  flex-direction: column;
+  /* min-height 100px — выравнивает полосы между ячейками ряда */
+  min-height: 100px;
+}
+/* 30px между before-ячейкой и after-ячейкой одной колонки */
+.summary__cell--before { margin-bottom: var(--space-3); }
+
+.summary__text {
+  margin: 0 0 var(--space-2) 0;
+  /* Утверждения в Summary — body 20/20 */
+  font-size: 20px;
+  line-height: 20px;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: var(--fg);
+  text-wrap: balance;
+  /* flex-grow 1 — текст заполняет ячейку, полосы выравниваются stretch'ем */
+  flex: 1 0 auto;
+}
+
+.summary__viz {
+  display: flex;
+  align-items: center;
+  /* margin-top: auto — отталкивает viz к низу ячейки.
+     В сочетании с min-height 240 на cell все viz одного ряда
+     гарантированно на одной горизонтали (низ ячейки), независимо
+     от того сколько строк занимает текст. */
+  margin-top: auto;
+  min-height: 22px;
+}
+
+/* Inline-вариант — для композиций где нужно несколько элементов в ряд
+   (pixel-grid + крестик + круг + другая pixel-grid).
+   gap 8 — компактно, как в оригинале Strengths. */
+.summary__viz--inline {
+  flex-direction: row;
+  align-items: flex-end;        /* выравнивание по низу — все фигуры стоят на одной линии */
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* X-MARK — крестик (как «broken» / «missing» индикатор).
+   Рисуется через 2 наклонённых псевдо-элемента ::before и ::after.
+   Размер по умолчанию 28×28, --small даёт 20×20. */
+.x-mark {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+.x-mark--small { width: 20px; height: 20px; }
+.x-mark::before,
+.x-mark::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 5px;                  /* толщина линии креста */
+  background: currentColor;
+  transform-origin: center;
+}
+.x-mark::before { transform: translate(-50%, -50%) rotate(45deg); }
+.x-mark::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+.x-mark--pink { color: #F7768E; }
+
+/* CIRCLE-MARK — отдельный круг (вне pixel-grid).
+   Используется когда нужен один большой круг рядом с другими формами. */
+.circle-mark {
+  display: block;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* SQUARE-MARK — отдельный квадрат (вне pixel-grid).
+   Используется когда нужен один квадрат рядом с другими формами,
+   или для создания пунктирного «пути» из квадратов разного размера. */
+.square-mark {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* VENN — три наложенных круга как Venn-диаграмма.
+   
+   Архитектура слоёв:
+   1. БЕЛЫЕ ПОДЛОЖКИ .venn__bg — сплошные диски сзади. Белый нужен
+      для multiply blend (на белом цвет = свой цвет, на чёрном = чёрный).
+   2. ЦВЕТНЫЕ ЗАЛИТЫЕ КРУГИ .venn__circle — pass-through через
+      mix-blend-mode: multiply. Это subtractive смешение (как краски,
+      CMYK-логика):
+        жёлтый × синий   = зелёный ✓
+        жёлтый × розовый = оранжевый ✓
+        розовый × синий  = фиолетовый ✓
+        все три          = тёмный
+      isolation: isolate ограничивает blend group только дочерними
+      элементами — синий blue-zone фон в смешение не входит.
+   
+   Размер контейнера = ширина 3 кругов с учётом overlap. */
+.venn {
+  position: relative;
+  width: 46px;        /* 18 (overlap-сдвиг) + 28 (диаметр последнего) */
+  height: 44px;       /* 16 (вертикальный сдвиг 3-го) + 28 */
+  isolation: isolate;
+}
+/* Белая подложка под цветным кругом — диск 28×28.
+   Без blend-mode. Объединение трёх белых дисков создаёт «остров» белого
+   нужной формы, на котором цветные круги делают своё subtractive смешение. */
+.venn__bg {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #FFFFFF;
+}
+/* Цветной залитый круг — диск 28×28 поверх белой подложки.
+   mix-blend-mode: multiply — subtractive смешение цветов (как краска):
+     цвет на белом (вне пересечений) = чистый цвет
+     2 цвета на пересечении = их multiply-произведение (новый оттенок)
+     все 3 на центральном пересечении = тёмное смешение. */
+.venn__circle {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  mix-blend-mode: multiply;
+}
+
+/* DS-STACK — стопка элементов design system (круг + квадрат + прямоугольник).
+   Vertical flex с gap 0 — элементы примыкают друг к другу. */
+.ds-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+/* Числа внутри summary text (80%, 50K+, 3×) — НЕ моно.
+   Они стоят посреди предложения, моно врывался жирным акцентом
+   и спотыкал чтение. Apercu Regular с tabular numbers даёт
+   ровные одинаковые цифры без лишнего веса. */
+.num {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Полосы — высота 22px. Это 20 (--space-2) + 2 для оптической компенсации.
+   На синем фоне строго 20px выглядят тоньше чем хочется. */
+.bar {
+  display: block;
+  height: 22px;
+  border-radius: 0;
+  width: var(--w, 100%);
+}
+.bar--pink   { background: #F7768E; }
+.bar--green  { background: #9ECE6A; }
+.bar--split {
+  background:
+    linear-gradient(to right,
+      #F7768E 0 var(--pink, 70%),
+      #9ECE6A var(--pink, 70%) 100%);
+  width: 100%;
+}
+.dots {
+  display: flex;
+  /* gap 4px — внутри визуализации, на «миниатюрном» уровне.
+     Раньше 6 — при ширине колонки ~190px и 7 точках 22px они вылезали.
+     При 4px: 7×22 + 6×4 = 178px, гарантированно умещаются.
+     Это 4px не из основной шкалы (10/20/30...), но внутри визуализации
+     допустимо — точки должны читаться как один объект. */
+  gap: 4px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+.dot { display: inline-block; width: 22px; height: 22px; flex-shrink: 0; }
+.dot.dot--ci { border-radius: 50%; }
+.dot.dot--tr {
+  background: var(--c);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+/* ============================================
+   OUTRO (гирлянда + кнопка)
+   ============================================ */
+.outro {
+  /* Padding-top = 0: расстояние до summary обеспечивается её
+     собственным padding-bottom (120). Раньше было +80 = 200,
+     получалась «яма». Теперь 120 — нормальная пауза между секциями.
+     Padding-bottom 50 — не нужно много пустоты после кнопки до конца страницы. */
+  padding: 0 var(--space-2) 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* 30 между цветком и кнопкой — близкие элементы одной зоны */
+  gap: var(--space-3);
+}
+/* Финальный плейсхолдер — горизонтальный wide-banner на всю контент-зону.
+   Соотношение сторон ~16:6 (как desktop-аспект, но шире/ниже),
+   max-width = --max-w (963px) чтобы не выходил за основной контент. */
+.placeholder.placeholder--outro {
+  width: 100%;
+  max-width: var(--max-w);
+  aspect-ratio: 16 / 6;
+       /* как у placeholder--desktop — единая мера */
+}
+
+/* Гирлянда удалена — в кейсе 2 нет финальной композиции с фигурами. */
+
+/* Кнопка Back to the top — Berkeley Mono 15/24 (caption-уровень).
+   Раньше была 13px — на чёрной кнопке слишком мелко, читалась с трудом.
+   Padding 12/24 — чуть просторнее (10/20 было сжато).
+   Стрелка ↑ 16px чтоб была видна, но не доминировала над текстом. */
+.back-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+  background: transparent;
+  color: var(--fg);
+  border: 2px solid var(--fg);
+  border-radius: 0;
+  text-decoration: none;
+  padding: 10px 20px;
+  font-family: var(--sans);
+  font-size: 20px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0;
+  transition: background var(--dur-fast) var(--ease-inout),
+              color var(--dur-fast) var(--ease-inout);
+}
+.back-button:hover {
+  background: var(--fg);
+  color: var(--bg-dark);
+}
+.back-button__arrow {
+  width: 16px;
+  height: 16px;
+  display: block;
+  overflow: visible;
+}
+
+/* REDUCED MOTION — глобальный блок ниже (для reveal-target).
+   Здесь специальные правила для гирлянды убраны — её больше нет в кейсе 2. */
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+/* ===== ПЛАНШЕТ (<= 900px) ===== */
+@media (max-width: 900px) {
+  /* На планшете тот же ритм что на десктопе: padding 40 верт.
+     Шкала ges-2-стиля одинакова на всех экранах, не раздуваем
+     паузы при сужении viewport'а. */
+  .section { padding: 40px var(--space-2); }
+  .screens { padding: 40px var(--space-2); }
+  .hero    { padding: 140px var(--space-2) 40px; }
+  .topnav ul { flex-wrap: wrap; }
+
+  /* Context: иллюстрация и теги — друг под другом, на всю ширину */
+  .context__top { grid-template-columns: 1fr; }
+  .context__bottom { grid-template-columns: 1fr; gap: var(--space-3); }
+  .context__tags { align-items: center; padding: var(--space-2) 0; }
+
+  /* Challenges: остаются 4 в ряд, gap уменьшается до 20 */
+  .challenges { grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+  .card--small { font-size: 18px; line-height: 20px; padding: 0; }
+  .challenges__illu { border-radius: 0; }
+
+  /* Screens — gap 40 такой же как на десктопе */
+  .screens__inner { gap: 40px; }
+}
+
+/* ===== МОБИЛКА (<= 600px) ===== */
+@media (max-width: 600px) {
+  /* === Общие отступы — на мобиле сжатая версия той же шкалы ===
+     Между секциями 80 (вместо 120 на десктопе).
+     Горизонтальный gutter — 20, как у десктопа: ges-2 не меняет
+     горизонтальный воздух при сужении, только вертикальный. */
+  /* На мобиле тот же ритм что на десктопе: padding 40 верт, 20 гориз.
+     Раньше было --space-5 (80) — слишком огромные паузы для узкого экрана,
+     контент терялся в пустоте между блоками. */
+  .section { padding: 40px var(--space-2); }
+  .screens { padding: 40px var(--space-2); }
+  .outro   { padding: 0 var(--space-2) 40px; }
+
+  /* === Шкала типографики на мобиле — пропорционально меньше,
+     но сохраняет соотношения:
+       H1 hero    → 56/56 (было 88/88, ×0.64)
+       H2 section → 40/44 (было 60/64, ×0.67)
+       H3 cards   → 24/28 (было 30/32, ×0.8)
+       Pull-quote → 28/32 (было 40/44, ×0.7)
+       Body       → 18/26 (было 20/30, ×0.9)
+     Body почти не сжимается (18 — нижний предел читаемости),
+     заголовки сжимаются заметнее — это даёт правильный
+     визуальный ритм на узком экране. === */
+
+  .hero__title    { font-size: 50px; line-height: 50px; }
+  .section__title { font-size: 40px; line-height: 40px; margin-bottom: var(--space-3); }
+  .screens__title { font-size: 40px; line-height: 40px; margin-bottom: var(--space-3); }
+
+  /* Hero на мобиле: top 60 даёт место для фиксированного меню (~40) + 20 воздуха.
+     Bottom 40 — стандартная пауза. */
+  .hero { padding: 160px var(--space-2) 40px; }
+
+  /* Hero-shapes на мобиле — продолжают работать.
+     Все размеры/координаты в %, поэтому композиция автоматически
+     сжимается под ширину экрана. Минимальный кегль (23px круг)
+     становится ~6-8px на 380px экране — мелкие точки, что даёт
+     эффект «пыли» и не отвлекает от заголовка. */
+}
+
+@media (max-width: 600px) {
+  /* На мобиле iPhone-мокапы — узкие центрированные с воздухом по бокам.
+     width: 65% оставляет ~17% воздуха с каждой стороны.
+     aspect-ratio 9:19 сохраняется (унаследован от десктопа), высота
+     рассчитывается автоматически из ширины. Видео остаётся высоким
+     вертикальным кадром (записями экрана iPhone), не квадратится.
+     На типичном мобиле 390px шириной: видео ~254px × 535px высотой. */
+  .video-wrap--mobile {
+    width: 75%;
+    height: auto;
+    max-width: 400px;
+    border-radius: 36px;
+  }
+
+  /* === CONTEXT ===
+     Меняем порядок на мобиле:
+       1. Иллюстрация
+       2. About the project
+       3. Теги
+       4. Design role
+     Используем display:contents у родительских группировок,
+     чтобы CSS-order работал на их детях напрямую. */
+  .section:has(> .context__top) {
+    display: flex;
+    flex-direction: column;
+  }
+  .section:has(> .context__top) > .section__title { order: 0; }
+  .context__top, .context__bottom {
+    display: contents;
+  }
+  .context__illu                    {
+    order: 1;
+    /* Явная width: 100% — без неё flex-контейнер схлопывается до contents,
+       и плейсхолдер с aspect-ratio становится плоской полоской.
+       Раньше внутри был <img> с фиксированным viewBox — он сам отдавал размеры,
+       теперь div-плейсхолдер требует явной ширины родителя. */
+    width: 100%;
+  }
+  .context__bottom > :nth-child(1)  { order: 2;  }   /* About the project */
+  .context__tags                    { order: 3; margin: var(--space-3) 0; align-items: flex-start; gap: var(--space-1); }
+  .context__bottom > :nth-child(2)  { order: 4;  }   /* Design role */
+
+  /* === МОБИЛЬНАЯ ШКАЛА — общий блок переопределений ===
+     Теги — 18/26 (под body на мобиле), обводка остаётся 2px.
+     Меньше делать нет смысла: иначе обводка визуально доминирует над текстом. */
+  .tag         { padding: 10px 20px; font-size: 18px; line-height: 20px; letter-spacing: 0; }
+  .tag--accent { padding: 10px 20px; font-size: 14px; line-height: 20px; letter-spacing: 0; }
+
+  /* H3 cards — 24/28 на мобиле */
+  .card { padding: 0; border-radius: 0; }
+  .card--text h3 { font-size: 24px; line-height: 30px; letter-spacing: 0; }
+
+  /* BODY единым блоком — 18/26 */
+  .card--text p,
+  .card--small,
+  .screens__item figcaption {
+    font-size: 18px;
+    line-height: 20px;
+    letter-spacing: 0;
+  }
+  /* Pull-quote под challenges — 28/32 */
+  .challenges__summary {
+    font-size: 28px;
+    line-height: 30px;
+    letter-spacing: 0;
+    margin-top: 40px;     /* 40 на мобиле — как между секциями */
+  }
+
+  /* === CHALLENGES === */
+  .challenges {
+    grid-template-columns: 1fr 1fr;       /* 2×2 вместо 1×4 */
+    gap: var(--space-3);
+  }
+  .challenges li { gap: var(--space-2); }
+  .challenges__illu { border-radius: 0; }
+  .card--small {
+    padding: 0;
+    border-radius: 0;
+    text-wrap: balance;
+  }
+  .challenges li { gap: var(--space-2); }
+  .challenges__illu { border-radius: 0; }
+  .card--small {
+    padding: 0;                           /* без padding — текст под иллюстрацией */
+    border-radius: 0;
+    text-wrap: balance;
+  }
+  .challenges__summary {
+    padding: 0;
+    margin-top: 40px;           /* 40 — воздух перед pull-quote */
+    max-width: 480px;
+  }
+
+  /* === SCREENS — gap 40 как на десктопе === */
+  .screens__inner { gap: 40px; }
+  .placeholder--mobile-trio { gap: var(--space-1); }
+
+  /* На мобиле моно-префикс 13px, line-height 26 (= body на мобиле).
+     Меньше чем на десктопе (там 15) — на узком экране 15px уже близко
+     к body 18, теряется caption-уровень. */
+  .screens__num {
+    font-size: 18px;
+    line-height: 20px;
+  }
+
+  /* CAPTION (моно-метки на мобиле): 13/20.
+     На мобиле уменьшаем 15→13 — на узком экране 15 наезжает на body 18,
+     теряется визуальный шаг.
+     line-height 20 (а не 18) — чтоб метка не выглядела «приплюснутой». */
+  .summary__col-head,
+  .placeholder__label,
+  .back-button {
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  /* === SUMMARY на мобиле — 2 колонки с шапкой before/after сверху ===
+     Структура (после удаления col-heads, осталось 10 элементов в grid):
+       Row 1: [before label] | [after label]
+       Row 2: before-1       | after-1
+       Row 3: before-2       | after-2
+       Row 4: before-3       | after-3
+       Row 5: before-4       | after-4
+     Метки before/after выводятся ОДИН раз сверху, не повторяются на каждой cell. */
+  .summary__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--space-2);
+    row-gap: var(--space-3);
+    /* stretch — обе ячейки одной пары одной высоты, viz через margin-top:auto
+       прижаты к низу обеих ячеек на одной горизонтали. */
+    align-items: stretch;
+  }
+  .summary__row-label {
+    display: block !important;
+    grid-row: 1;
+    padding: 0;
+  }
+  .summary__row-label:nth-child(1) { grid-column: 1; }
+  .summary__row-label:nth-child(6) { grid-column: 2; }
+
+  .summary__cell {
+    display: flex;
+    flex-direction: column;
+  }
+  .summary__cell--before { grid-column: 1; }
+  .summary__cell--after  { grid-column: 2; }
+
+  .summary__text { margin: 0; }
+  .summary__viz {
+    margin-top: auto;
+    padding-top: var(--space-1);
+  }
+
+  /* 4 пары, каждая на одном grid-row начиная со 2-го: */
+  .summary__grid > :nth-child(2) { grid-row: 2; }   /* before-1 */
+  .summary__grid > :nth-child(7) { grid-row: 2; }   /* after-1  */
+  .summary__grid > :nth-child(3) { grid-row: 3; }   /* before-2 */
+  .summary__grid > :nth-child(8) { grid-row: 3; }   /* after-2  */
+  .summary__grid > :nth-child(4) { grid-row: 4; }   /* before-3 */
+  .summary__grid > :nth-child(9) { grid-row: 4; }   /* after-3  */
+  .summary__grid > :nth-child(5) { grid-row: 5; }   /* before-4 */
+  .summary__grid > :nth-child(10){ grid-row: 5; }   /* after-4  */
+  /* Summary text на мобиле — 22/26 (между body 18/26 и pull-quote 28/32).
+     Это утверждения из таблицы: им нужен вес выше body, но не настолько
+     крупный как pull-quote. */
+  .summary__text {
+    font-size: 22px;
+    line-height: 20px;
+    margin-bottom: var(--space-1);     /* 10 до полосы */
+    letter-spacing: 0;
+  }
+  .summary__viz  { margin-top: auto; }
+
+  /* Полосы и фигурки — оставляем 22px, как на десктопе */
+  .summary__viz .bar       { height: 22px; max-width: 100%; }
+  .summary__viz .bar--split{ width: 100%; }
+  .summary__viz .dot       { width: 22px; height: 22px; }
+  .summary__viz .dots      { gap: 4px; flex-wrap: wrap; }
+
+  /* Pixel-grid на мобиле — пиксели остаются 20px, поскольку это уже
+     наш минимальный размер из шкалы. Сетка автоматически сожмётся. */
+  .back-button { padding: 10px 20px; }
+}
+
+/* Очень узкие экраны (<= 380px) — последний шаг сжатия */
+@media (max-width: 380px) {
+  .hero__title { font-size: 40px; line-height: 40px; }
+  .section__title, .screens__title { font-size: 30px; line-height: 30px; }
+}
+
+/* ============================================
+   HERO — без анимации появления.
+   Заголовок просто стоит на месте, читается сразу при загрузке.
+   Это согласуется с editorial-эстетикой ges-2: текст там не «приезжает»,
+   он уже есть на странице.
+   Раньше была clip-path mask-reveal — давала артефакты при перерисовке
+   (буквы перекрывались белым), и в целом «звучала» как landing-эффект,
+   а не как редакторская страница.
+   ============================================ */
+
+/* ============================================
+   MONO REVEAL — моно-метки появляются с задержкой относительно
+   секции, через простой fade + лёгкий сдвиг слева.
+   Раньше пробовал clip-path / max-width / scaleX — все три варианта
+   нестабильно работали с ::before и при разной специфичности.
+   Простой opacity + translateX(-8px) → translateX(0) — работает везде.
+   Эффект: моно «проявляется», как будто включился терминал —
+   характер сухой и быстрый, не theatre.
+   ============================================ */
+/* ::before индексы — fade-in через opacity transition.
+   Самый надёжный способ для псевдо-элементов, работает везде.
+   transition-delay 250ms — заголовок появляется первым (300ms),
+   потом моно-индекс. */
+.section__title::before,
+.screens__title::before {
+  content: none;
+  display: none;
+}
+
+/* Standalone моно — typewriter через max-width.
+   На моно-шрифте с равной шириной символов выглядит как машинка.
+   30ch — больше чем любая моно-метка, контент не растягивается.
+   tag--accent исключён — он внутри display:contents структуры на мобиле,
+   IntersectionObserver ненадёжен. */
+@keyframes mono-typewriter {
+  from { max-width: 0; }
+  to   { max-width: 30ch; }
+}
+/* Моно-метки начинают невидимыми (opacity:0). JS добавляет .is-revealed
+   когда родитель появляется в viewport — opacity становится 1, и одновременно
+   стартует typewriter (символ за символом через setTimeout 35ms).
+   Раньше использовалась CSS-анимация max-width:0→30ch, но она конфликтовала
+   с JS-typewriter — некоторые элементы успевали раскрыть max-width до того
+   как JS стирал textContent, и казалось что они уже напечатаны. */
+.summary__col-head,
+.summary__row-label,
+.placeholder__label,
+.placeholder--mobile-trio > div span,
+.screens__num,
+.tag--accent,
+.topnav a {
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+/* back-button — всегда видим (фон + рамка + текст). */
+.summary__col-head,
+.summary__row-label,
+.summary__cell::before,
+.placeholder__label,
+.placeholder--mobile-trio > div span {
+  display: block;
+}
+
+
+/* Когда родитель reveal-target становится .is-revealed — моно-метки
+   получают opacity:1 (плавное проявление 200ms). */
+.is-revealed .summary__col-head,
+.is-revealed .summary__row-label,
+.is-revealed .summary__cell::before,
+.is-revealed .placeholder__label,
+.is-revealed .placeholder--mobile-trio > div span,
+.is-revealed .screens__num,
+.is-revealed .tag--accent,
+.topnav.is-revealed a {
+  opacity: 1;
+}
+
+/* Также покрываем случай когда сам элемент с моно — это reveal-target
+   (например, summary__grid). И back-button сам по себе не reveal-target,
+   но его родитель .outro может им стать — добавлю reveal-target
+   и ему тоже через JS. */
+
+/* ============================================
+   SCROLL REVEAL — мягкое появление при скролле.
+   Класс .is-revealed добавляется JS-ом через IntersectionObserver,
+   до этого элемент сдвинут вниз и невидим.
+   ============================================ */
+.reveal-target {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity var(--dur-mid) var(--ease-out),
+              transform var(--dur-mid) var(--ease-out);
+}
+.reveal-target.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Уважаем reduced-motion: для всех reveal/load-in мгновенно */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-target {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ============================================
+   PROGRESS BAR удалён — браузер уже показывает скролл-индикатор,
+   собственный 2px-бар сверху дублировал эту информацию и отвлекал.
+   ges-2 way: доверяем нативному скроллу. Также удалён JS-обработчик scroll
+   и HTML-разметка <div class="progress">.
+   ============================================ */
+/* ============================================
+   TOP NAV — оглавление страницы (вариант A+D).
+   Минималистичные моно-метки, без капсулы/фона/обводки.
+   Появляется только когда читатель отскроллил ниже hero.
+   Стиль идентичен кейсу 1 — единая система навигации.
+   ============================================ */
+.topnav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: var(--space-1) var(--space-2);
+  /* Меню видимо всегда — не зависит от scroll-логики, не зависит от
+     opacity-transition'ов которые ломают composited layer для difference.
+     В ges-2-стиле меню — постоянная навигация. */
+  pointer-events: auto;
+}
+.topnav ul {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: var(--max-w);
+  display: flex;
+  gap: var(--space-1);
+}
+.topnav {
+  /* Палитра меню — caption-стиль, как остальные mono-метки в кейсе.
+     По умолчанию (на белой зоне): серый неактивный, чёрный активный.
+     На синей зоне (.on-dark, переключает JS через IntersectionObserver):
+     светло-серый неактивный, белый активный.
+     
+     Те же значения что у --subtle / --fg в blue-zone — меню читается как
+     caption в каждой зоне. Без mix-blend-mode потому что на синем тот
+     давал жёлто-зелёный complement, что выбивалось из общей палитры. */
+  --nav-inactive: rgba(10, 10, 10, 0.45);
+  --nav-active:   rgba(10, 10, 10, 1);
+}
+.topnav.on-dark {
+  --nav-inactive: rgba(255, 255, 255, 0.6);
+  --nav-active:   rgba(255, 255, 255, 1);
+}
+.topnav a {
+  font-family: var(--sans);
+  font-size: 20px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0;
+  /* inline-flex + center — все пункты (вкл. Next case со стрелкой) одной
+     высоты и на одной линии, без съезжания */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  /* обычный регистр (не капс), текст и рамка — чёрные (--fg) */
+  border: 2px solid var(--fg);
+  border-radius: 999px;
+  padding: 6px 16px;
+  color: var(--fg);
+  text-decoration: none;
+  transition: color var(--dur-mid) var(--ease-inout),
+              border-color var(--dur-mid) var(--ease-inout),
+              background var(--dur-mid) var(--ease-inout);
+}
+
+.topnav a:hover,
+.topnav a.is-active {
+  /* активная/hover — заливка чёрным (--fg), текст цвета фона */
+  color: var(--bg-dark);
+  background: var(--fg);
+  border-color: var(--fg);
+}
+.topnav__arrow {
+  width: 16px;
+  height: 16px;
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+@media (max-width: 600px) {
+  .topnav { padding: var(--space-1) var(--space-2); }
+  .topnav ul { gap: var(--space-1); flex-wrap: wrap; }
+  .topnav a { font-size: 16px; line-height: 20px; padding: 5px 14px; border-width: 1.5px; }
+}
+@media (max-width: 480px) {
+  .topnav ul { gap: var(--space-1); }
+  .topnav a { font-size: 15px; padding: 5px 12px; border-width: 1.5px; }
+}
+
+/* Hero без offset — меню изначально невидимое, не нужно резервировать место.
+   Когда меню появляется при скролле, hero уже выше viewport. */
+
+section[id] {
+  scroll-margin-top: 80px;
+}
+
+
+/* ============================================
+   VIDEO IN MOTION — видео-плейсхолдеры в секции Screens.
+   Заменяют статичные .placeholder--desktop там где есть .mp4.
+   Структура: <div .video-wrap> > <video> + <div .video-progress>.
+   Видео автоплей, муто, лупом. Прогресс-бар внизу обновляется JS.
+   ============================================ */
+.video-wrap {
+  position: relative;
+  width: 100%;
+  /* 16/10 — реальное соотношение видео (1.6), чтобы заполняло без полей */
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+.screen-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  cursor: pointer;
+}
+/* Вертикальные видео 01–04 (мобильное приложение, разрешение 336×710).
+   aspect-ratio = 336/710; ширина ограничена (видео не на всю колонку).
+   Скругление 40px на оригинале 710px высотой ≈ 5.6% — задаём в относительных
+   единицах через clamp, чтобы при любом рендер-размере выглядело как 40 на 336×710. */
+.video-wrap--mobile {
+  width: auto;
+  aspect-ratio: 336 / 710;
+  /* Крупнее — это мобильное приложение, экраны должны читаться.
+     760px высоты = заметный «телефон» в колонке. */
+  height: 760px;
+  max-width: 100%;
+  margin: 0 auto;
+  /* overflow:hidden обрезает видео ровно по скруглению — без остатков фона в углах */
+  overflow: hidden;
+  background: transparent;
+  /* 40px на оригинале 710px → при height 760 масштаб 1.07 → ~44px. Фиксированный
+     px-радиус (не %), чтобы углы были круглые, а не эллиптичные. */
+  border-radius: 44px;
+}
+.video-wrap--mobile .screen-video {
+  object-fit: cover;
+  border-radius: inherit;
+}
+/* Видео 05 (горизонтальное, manager view) — размер определяется самим файлом,
+   который Полина загрузит: без фиксированного aspect-ratio. Контейнер
+   обнимает видео по его натуральным пропорциям, до полной ширины колонки. */
+.video-wrap--auto {
+  aspect-ratio: auto;
+  width: 100%;
+  height: auto;
+}
+.video-wrap--auto .screen-video {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+/* Подпись пути к видео — показывается пока видео не загружено. */
+.video-wrap__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 18px;
+  color: rgba(255, 255, 255, .55);
+  word-break: break-all;
+  /* z-index: 2 — подпись ПОВЕРХ <video> элемента (который имеет z-index: auto,
+     но в DOM идёт после span'а, потому без явного z-index перекрывал бы его).
+     После загрузки видео .video-wrap--has-video скрывает подпись через display:none. */
+  z-index: 2;
+  pointer-events: none;
+}
+.video-wrap--has-video .video-wrap__label {
+  display: none;
+}
+.video-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.25);
+  z-index: 3;
+  pointer-events: none;
+}
+/* Под вертикальными видео — короткая полоска по центру (как в макете),
+   а не на всю ширину. Приподнята над нижним краем и скруглена. */
+.video-wrap--mobile .video-progress {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  bottom: 16px;
+  width: 80px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+}
+.video-wrap--mobile .video-progress__bar {
+  border-radius: 999px;
+}
+.video-progress__bar {
+  height: 100%;
+  width: 0%;
+  background: #FFFFFF;
+  transform-origin: left;
+}
+/* Мобильный fullscreen видео (landscape). Скрыт по умолчанию; .is-open
+   показывает. Видео поворачивается на 90° чтобы вертикальный экран
+   использовался горизонтально. */
+.video-fs {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.video-fs.is-open { display: flex; }
+.video-fs__video {
+  /* поворот в горизонталь: после rotate ширина = высота вьюпорта */
+  transform: rotate(90deg);
+  width: 100vh;
+  height: 100vw;
+  object-fit: contain;
+}
+.video-fs__close {
+  position: fixed;
+  /* Крестик повёрнут на 90° вместе с видео и стоит в углу, который после
+     поворота телефона в горизонталь окажется сверху — удобно закрыть.
+     Видео крутится по часовой → правый-нижний угол вертикального экрана
+     становится правым-верхним для зрителя в горизонтали. */
+  bottom: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  z-index: 10000;
+  transform: rotate(90deg);
+}
+.video-fs__close svg { width: 100%; height: 100%; display: block; }
+/* ============================================
+   SUMMARY RESULTS — короткий вариант для Strengths.
+   В отличие от кейсов 1/2 (там 4-колоночная before/after таблица),
+   здесь — текстовый блок с подзаголовком и одним плейсхолдером
+   под иллюстрацию.
+   
+   Структура: H3 + параграф + image-placeholder.
+   max-width 540px (--measure) для читаемости параграфа.
+   ============================================ */
+.summary-results {
+  max-width: var(--measure);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);   /* 30 — пауза рубрики */
+}
+.summary-results__subtitle {
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 20px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--subtle);
+  margin: 0;
+  font-weight: 400;
+}
+.summary-results__text {
+  font-family: var(--sans);
+  font-size: 30px;        /* h3 уровень — пулл-цитата сильнее body */
+  line-height: 30px;
+  font-weight: 400;
+  color: inherit;          /* наследует .blue-zone color (белый) */
+  margin: 0;
+  text-wrap: balance;
+}
+/* Плейсхолдер для будущей иллюстрации — большой 16:9 блок,
+   как у placeholder--desktop, но не привязан к screens-сетке. */
+.placeholder--summary {
+  width: 100%;
+  max-width: 800px;
+  aspect-ratio: 16 / 9;
+  
+  margin-top: var(--space-3);
+}
+
+/* Mobile — ужимаем кегль summary-results__text */
+@media (max-width: 600px) {
+  .summary-results__text {
+    font-size: 22px;
+    line-height: 30px;
+  }
+  .summary-results__subtitle {
+    font-size: 13px;
+    line-height: 20px;
+  }
+}
+
+
+</style>
+</head>
+<body>
+
+  <!-- ===== TOP NAV — оглавление (вариант A+D).
+       Минималистичные моно-метки, появляются после скролла за hero. -->
+  <nav class="topnav" aria-label="Sections">
+    <ul>
+      <li class="topnav__home"><a href="index.html" class="topnav__home-link"><svg class="topnav__arrow" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M16 16 L4 4 M4 13 L4 4 L13 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg><span data-hover-shuffle>Home</span></a></li>
+      <li class="topnav__prev"><a href="case-2.html" class="topnav__prev-link"><svg class="topnav__arrow" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M17 10 H3 M9.5 3.5 L3 10 L9.5 16.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg><span data-hover-shuffle>Previous case</span></a></li>
+      <li><a href="#overview"   data-target="overview"    data-hover-shuffle>Overview</a></li>
+      <li><a href="#challenges" data-target="challenges"  data-hover-shuffle>Challenges</a></li>
+      <li><a href="#design"     data-target="design"      data-hover-shuffle>Design</a></li>
+      <li><a href="#results"    data-target="results"     data-hover-shuffle>Results</a></li>
+      <li class="topnav__next"><a href="case-1.html" class="topnav__next-link"><span data-hover-shuffle>Next case</span><svg class="topnav__arrow" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 10 H17 M10.5 3.5 L17 10 L10.5 16.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></a></li>
+    </ul>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <!-- ===== HERO как у ges-2: просто заголовок, без декора. -->
+  <section class="hero">
+    <header class="hero__inner">
+      <h1 class="hero__title">Mapping how teams<br>actually work</h1>
+    </header>
+  </section>
+
+  <!-- ===== CONTEXT ===== -->
+  <section class="section" id="overview" data-bg="light">
+    <h2 class="section__title reveal-target" data-index="/ 01">Context</h2>
+
+    <div class="context__top reveal-target">
+      <div class="context__illu">
+        <div class="placeholder placeholder--context"><img class="placeholder__img" data-src="images/case-3/01-context" alt=""><span class="placeholder__label">add image</span></div>
+      </div>
+
+      <div class="context__tags">
+        <span class="tag">Founding designer</span>
+        <span class="tag">Product, brand, system</span>
+        <span class="tag">Physics-based interactions</span>
+        <span class="tag">iOS · web</span>
+      </div>
+    </div>
+
+    <div class="context__bottom reveal-target">
+      <article class="card card--text">
+        <h3>About the project</h3>
+        <p>In many teams, decisions are made without a clear view of how people actually coordinate, influence each other, and form patterns over time. Strengths focuses on making those dynamics visible and usable in practice.</p>
+      </article>
+      <article class="card card--text">
+        <h3>Design role</h3>
+        <p>I defined the structure, visual language, and design system: how the product works, feels, and scales.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===== CHALLENGES ===== -->
+  <section class="section" id="challenges" data-bg="light">
+    <h2 class="section__title reveal-target" data-index="/ 02">Problems</h2>
+
+    <ul class="challenges reveal-target">
+      <li>
+        <div class="challenges__illu"><div class="placeholder placeholder--challenge"><img class="placeholder__img" data-src="images/case-3/02-problem-01" alt=""><span class="placeholder__label">add image</span></div></div>
+        <div class="card card--small">No design<br>process</div>
+      </li>
+      <li>
+        <div class="challenges__illu"><div class="placeholder placeholder--challenge"><img class="placeholder__img" data-src="images/case-3/02-problem-02" alt=""><span class="placeholder__label">add image</span></div></div>
+        <div class="card card--small">No system<br>rules</div>
+      </li>
+      <li>
+        <div class="challenges__illu"><div class="placeholder placeholder--challenge"><img class="placeholder__img" data-src="images/case-3/02-problem-03" alt=""><span class="placeholder__label">add image</span></div></div>
+        <div class="card card--small">No interpretative<br>layer</div>
+      </li>
+      <li>
+        <div class="challenges__illu"><div class="placeholder placeholder--challenge"><img class="placeholder__img" data-src="images/case-3/02-problem-04" alt=""><span class="placeholder__label">add image</span></div></div>
+        <div class="card card--small">No interaction<br>logic</div>
+      </li>
+    </ul>
+
+    <p class="challenges__summary card card--small reveal-target">
+      <span class="challenges__summary__l"><svg class="summary__arrow" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 10 H15.5 M10.5 3.5 L17 10 L10.5 16.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/></svg> The system produced lots of data,</span>
+      <span class="challenges__summary__r">but people had to do the work of making sense of it.</span>
+    </p>
+  </section>
+
+  <!-- ===== СИНЯЯ ЗОНА: screens + summary + outro =====
+       Один блок, с плавным переходом из чёрного в синий сверху,
+       и без перехода обратно — синий идёт до самого низа -->
+  <div class="blue-zone">
+
+  <!-- ===== SCREENS ===== -->
+  <section class="screens" id="design" data-bg="dark">
+    <h2 class="screens__title reveal-target" data-index="/ 03">In&nbsp;motion</h2>
+    <div class="screens__inner">
+
+      <!-- 01: первый экран при запуске. Mobile видео. -->
+      <figure class="screens__item reveal-target">
+        <div class="video-wrap video-wrap--mobile">
+          <video class="screen-video" autoplay loop muted playsinline preload="metadata"
+                 data-src="images/case-3/03-screen-01"></video><div class="video-progress"><div class="video-progress__bar"></div></div>
+        </div>
+        <figcaption><span class="screens__num">01 /</span> The first thing you see when you open the app.</figcaption>
+      </figure>
+
+      <!-- 02: click-thru main / teammates / yourself. Mobile видео. -->
+      <figure class="screens__item reveal-target">
+        <div class="video-wrap video-wrap--mobile">
+          <video class="screen-video" autoplay loop muted playsinline preload="metadata"
+                 data-src="images/case-3/03-screen-02"></video><div class="video-progress"><div class="video-progress__bar"></div></div>
+        </div>
+        <figcaption><span class="screens__num">02 /</span> A short click-thru — main, teammates, yourself. The little square thing is everyone's shape, unique per person, formed by the surveys they take.</figcaption>
+      </figure>
+
+      <!-- 03 & 04: walk through one of the surveys + результаты (объединено в 2 видео). -->
+      <figure class="screens__item reveal-target">
+        <div class="video-wrap video-wrap--mobile">
+          <video class="screen-video" autoplay loop muted playsinline preload="metadata"
+                 data-src="images/case-3/03-screen-03"></video><div class="video-progress"><div class="video-progress__bar"></div></div>
+        </div>
+        <figcaption><span class="screens__num">03 /</span> A walk through one of the surveys. The halfway pause is parallax circles — drag with your cursor on web, or tilt your phone.</figcaption>
+      </figure>
+
+      <figure class="screens__item reveal-target">
+        <div class="video-wrap video-wrap--mobile">
+          <video class="screen-video" autoplay loop muted playsinline preload="metadata"
+                 data-src="images/case-3/03-screen-04"></video><div class="video-progress"><div class="video-progress__bar"></div></div>
+        </div>
+        <figcaption><span class="screens__num">04 /</span> The results screen has the team's shapes drop in with physics; they pile up at the bottom, you can shake them around. Sometimes playing with these takes longer than the survey itself :)</figcaption>
+      </figure>
+
+      <!-- 05: manager view, desktop видео. -->
+      <figure class="screens__item reveal-target">
+        <div class="video-wrap video-wrap--auto">
+          <span class="video-wrap__label"></span><video class="screen-video" autoplay loop muted playsinline preload="metadata"
+                 data-src="images/case-3/03-screen-05"></video><div class="video-progress"><div class="video-progress__bar"></div></div>
+        </div>
+        <figcaption><span class="screens__num">05 Manager /</span> A walk through the manager view — Home, Results, building a survey. The thing I'm most attached to is the survey builder: it's one editable sentence instead of a form. You write the situation in your own words and tap on any word to change it.</figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- ===== SUMMARY RESULTS =====
+       Структура как в кейсе 2: 4 колонки × before/after.
+       4 колонки: Product flow / Data meaning / Access & insights / Consistency & scalability.
+       В каждой ячейке — текст + pixel-композиция (квадраты, круги, прямоугольники).
+       Композиции выровнены по нижнему краю ячейки через margin-top:auto на .summary__viz. -->
+  <section class="section summary" id="results" data-bg="dark">
+    <h2 class="section__title reveal-target" data-index="/ 04">Summary results</h2>
+
+    <div class="summary__grid reveal-target">
+
+      <!-- BEFORE -->
+      <div class="summary__row-label">Before</div>
+
+      <!-- 01 / Product flow -->
+      <!-- 1 before: Isolated surveys with no shared structure.
+           Хаотическая россыпь — пиксели одного размера 20px,
+           но без структуры: верх — россыпь отдельных пятен разных цветов,
+           низ — слипшаяся пирамидка. Все пиксели имеют соседа,
+           композиция читается как «куча кирпичей». -->
+      <div class="summary__cell summary__cell--before">
+        <p class="summary__text">Isolated surveys with no shared structure</p>
+        <div class="summary__viz">
+          <div class="pixel-grid" style="--cols: 8; --rows: 3;">
+            <!-- Верхний ряд: россыпь -->
+            <span class="pixel" style="--x:0; --y:0; background:#F7768E"></span>
+            <span class="pixel" style="--x:1; --y:0; background:#E0AF68"></span>
+            <span class="pixel" style="--x:3; --y:0; background:#E0AF68"></span>
+            <span class="pixel" style="--x:5; --y:0; background:#FF9E64"></span>
+            <!-- Средний ряд: основа пирамидки -->
+            <span class="pixel" style="--x:0; --y:1; background:#F7768E"></span>
+            <span class="pixel" style="--x:1; --y:1; background:#7AA2F7; opacity:0.55"></span>
+            <span class="pixel" style="--x:2; --y:1; background:#E0AF68"></span>
+            <span class="pixel" style="--x:3; --y:1; background:#FF9E64"></span>
+            <span class="pixel" style="--x:4; --y:1; background:#7AA2F7; opacity:0.55"></span>
+            <span class="pixel" style="--x:5; --y:1; background:#F7768E"></span>
+            <!-- Нижний ряд: основание -->
+            <span class="pixel" style="--x:0; --y:2; background:#7AA2F7; opacity:0.55"></span>
+            <span class="pixel" style="--x:1; --y:2; background:#9ECE6A; opacity:0.7"></span>
+            <span class="pixel" style="--x:2; --y:2; background:#FF9E64"></span>
+            <span class="pixel" style="--x:3; --y:2; background:#E0AF68"></span>
+            <span class="pixel" style="--x:4; --y:2; background:#7AA2F7; opacity:0.55"></span>
+            <span class="pixel" style="--x:5; --y:2; background:#F7768E"></span>
+            <span class="pixel" style="--x:6; --y:2; background:#FF9E64"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 before: Static numbers and text reports, hard to interpret.
+           Зелёный квадрат + розовый крестик X — ОДНОГО размера (28×28).
+           «Цифра + ошибка» — пара одного веса. -->
+      <div class="summary__cell summary__cell--before">
+        <p class="summary__text">Static numbers and text reports, hard to interpret</p>
+        <div class="summary__viz summary__viz--inline">
+          <span class="square-mark" style="width:28px; height:28px; background:#9ECE6A"></span>
+          <div class="x-mark x-mark--pink" style="width:28px; height:28px;"></div>
+        </div>
+      </div>
+
+      <!-- 3 before: Results stored separately, no way to compare.
+           3 круга ОДНОГО размера (28×28), стоят раздельно в ряд.
+           Каждый сам по себе — нельзя сравнить. Цвета — те же что в Venn-после
+           (розовый/жёлтый/синий), без opacity, чтобы before и after
+           использовали ОДНИ И ТЕ ЖЕ кружки. -->
+      <div class="summary__cell summary__cell--before">
+        <p class="summary__text">Results stored separately, no way to compare</p>
+        <div class="summary__viz summary__viz--inline">
+          <span class="circle-mark" style="width:28px; height:28px; background:#F7768E"></span>
+          <span class="circle-mark" style="width:28px; height:28px; background:#E0AF68"></span>
+          <span class="circle-mark" style="width:28px; height:28px; background:#7AA2F7"></span>
+        </div>
+      </div>
+
+      <!-- 4 before: No consistency, every survey from scratch.
+           3 разрозненные фигуры (квадрат-полоска голубая, круг розовый,
+           квадрат-полоска оранжевая) — те же кирпичи что в after,
+           но разбросаны без системы. -->
+      <div class="summary__cell summary__cell--before">
+        <p class="summary__text">No consistency, every survey from scratch</p>
+        <div class="summary__viz summary__viz--inline">
+          <div class="pixel-grid" style="--cols: 3; --rows: 1;">
+            <span class="pixel" style="--x:0; --y:0; background:#7AA2F7; opacity:0.55"></span>
+            <span class="pixel" style="--x:1; --y:0; background:#7AA2F7; opacity:0.55"></span>
+            <span class="pixel" style="--x:2; --y:0; background:#7AA2F7; opacity:0.55"></span>
+          </div>
+          <span class="circle-mark" style="width:28px; height:28px; background:#F7768E"></span>
+          <div class="pixel-grid" style="--cols: 1; --rows: 2;">
+            <span class="pixel" style="--x:0; --y:0; background:#FF9E64"></span>
+            <span class="pixel" style="--x:0; --y:1; background:#FF9E64"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AFTER -->
+      <div class="summary__row-label">After</div>
+
+      <!-- 1 after: One shared flow across roles and use cases.
+           ДВЕ ЛИНИИ ОДИНАКОВОЙ ДЛИНЫ — оранжевая сверху, розовая снизу.
+           Обе на 8 пикселей (соответствует ширине before-сетки),
+           идеально совпадают по краю — единый flow. -->
+      <div class="summary__cell summary__cell--after">
+        <p class="summary__text">One shared flow across roles and use cases</p>
+        <div class="summary__viz">
+          <div class="pixel-grid" style="--cols: 8; --rows: 2;">
+            <span class="pixel" style="--x:0; --y:0; background:#FF9E64"></span>
+            <span class="pixel" style="--x:1; --y:0; background:#FF9E64"></span>
+            <span class="pixel" style="--x:2; --y:0; background:#FF9E64"></span>
+            <span class="pixel" style="--x:3; --y:0; background:#FF9E64"></span>
+            <span class="pixel" style="--x:4; --y:0; background:#FF9E64"></span>
+            <span class="pixel" style="--x:5; --y:0; background:#FF9E64"></span>
+            <span class="pixel" style="--x:6; --y:0; background:#FF9E64"></span>
+            <span class="pixel" style="--x:7; --y:0; background:#FF9E64"></span>
+            <span class="pixel" style="--x:0; --y:1; background:#F7768E"></span>
+            <span class="pixel" style="--x:1; --y:1; background:#F7768E"></span>
+            <span class="pixel" style="--x:2; --y:1; background:#F7768E"></span>
+            <span class="pixel" style="--x:3; --y:1; background:#F7768E"></span>
+            <span class="pixel" style="--x:4; --y:1; background:#F7768E"></span>
+            <span class="pixel" style="--x:5; --y:1; background:#F7768E"></span>
+            <span class="pixel" style="--x:6; --y:1; background:#F7768E"></span>
+            <span class="pixel" style="--x:7; --y:1; background:#F7768E"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 after: Structured insights instead of raw data.
+           ПУНКТИРНЫЙ ПУТЬ от зелёного квадрата до крестика — отдельные
+           квадраты ОДНОГО размера 16×16 идут горизонтально с промежутками,
+           складываясь в «пунктир» — структурированный путь.
+           Зелёный исток и крестик-цель — крупнее (28×28),
+           как «начало» и «конец» пути. -->
+      <div class="summary__cell summary__cell--after">
+        <p class="summary__text">Structured insights instead of raw data</p>
+        <div class="summary__viz summary__viz--inline">
+          <!-- Зелёный исходный квадрат (28×28 — как в before-ячейке) -->
+          <span class="square-mark" style="width:28px; height:28px; background:#9ECE6A"></span>
+          <!-- Пунктирный путь — 4 жёлтых квадрата ОДНОГО размера -->
+          <span class="square-mark" style="width:16px; height:16px; background:#E0AF68"></span>
+          <span class="square-mark" style="width:16px; height:16px; background:#E0AF68"></span>
+          <span class="square-mark" style="width:16px; height:16px; background:#E0AF68"></span>
+          <span class="square-mark" style="width:16px; height:16px; background:#E0AF68"></span>
+          <!-- Финальный крестик — 28×28, того же размера что зелёный исток -->
+          <div class="x-mark x-mark--pink" style="width:28px; height:28px;"></div>
+        </div>
+      </div>
+
+      <!-- 3 after: Shared dashboards enabling search, comparison, and immediate use.
+           ТЕ ЖЕ 3 круга что в before (розовый, жёлтый, синий, размер 28×28),
+           но НАЛОЖЕНЫ как Venn-диаграмма.
+           
+           Архитектура слоёв:
+           1. БЕЛЫЕ ПОДЛОЖКИ (.venn__bg) — сплошные белые диски сзади.
+              Белый нужен для multiply (subtractive) blend — чтобы цвета
+              правильно смешивались как краски.
+           2. ЦВЕТНЫЕ ЗАЛИТЫЕ КРУГИ (.venn__circle) — pass-through через
+              mix-blend-mode: multiply (CMYK-логика, реальное смешение красок):
+                жёлтый × синий   = зелёный
+                жёлтый × розовый = оранжевый
+                розовый × синий  = фиолетовый
+              isolation: isolate на контейнере не даёт смешению уйти на
+              синий фон blue-zone. -->
+      <div class="summary__cell summary__cell--after">
+        <p class="summary__text">Shared dashboards enabling search, comparison, and immediate use</p>
+        <div class="summary__viz">
+          <div class="venn">
+            <!-- Белые подложки -->
+            <span class="venn__bg" style="left:0;    top:0;"></span>
+            <span class="venn__bg" style="left:18px; top:0;"></span>
+            <span class="venn__bg" style="left:9px;  top:16px;"></span>
+            <!-- Цветные залитые круги — pass-through через multiply -->
+            <span class="venn__circle" style="background:#F7768E; left:0;    top:0;"></span>
+            <span class="venn__circle" style="background:#E0AF68; left:18px; top:0;"></span>
+            <span class="venn__circle" style="background:#7AA2F7; left:9px;  top:16px;"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 after: Design system supporting interfaces, reports, and new scenarios.
+           ИЗ ТЕХ ЖЕ кирпичей что в before-ячейке (круг, прямоугольник-полоска,
+           квадрат) собраны 3 организованные стопки — переиспользуемые
+           компоненты системы. Каждая стопка = 3 элемента (круг + 2 прямоугольника).
+           Цвета чередуются: розовый круг + жёлто-оранжевые прямоугольники. -->
+      <div class="summary__cell summary__cell--after">
+        <p class="summary__text">Design system supporting interfaces, reports, and new scenarios</p>
+        <div class="summary__viz summary__viz--inline">
+          <!-- Стопка 1: маленький круг + квадрат + широкий прямоугольник -->
+          <div class="ds-stack">
+            <span class="circle-mark" style="width:18px; height:18px; background:#F7768E"></span>
+            <div class="pixel-grid" style="--cols: 1; --rows: 1;">
+              <span class="pixel" style="--x:0; --y:0; background:#FF9E64"></span>
+            </div>
+            <div class="pixel-grid" style="--cols: 2; --rows: 1;">
+              <span class="pixel" style="--x:0; --y:0; background:#E0AF68"></span>
+              <span class="pixel" style="--x:1; --y:0; background:#E0AF68"></span>
+            </div>
+          </div>
+          <!-- Стопка 2: широкий жёлтый прямоугольник + широкий оранжевый прямоугольник + круг -->
+          <div class="ds-stack">
+            <div class="pixel-grid" style="--cols: 2; --rows: 1;">
+              <span class="pixel" style="--x:0; --y:0; background:#E0AF68"></span>
+              <span class="pixel" style="--x:1; --y:0; background:#E0AF68"></span>
+            </div>
+            <div class="pixel-grid" style="--cols: 2; --rows: 1;">
+              <span class="pixel" style="--x:0; --y:0; background:#FF9E64"></span>
+              <span class="pixel" style="--x:1; --y:0; background:#FF9E64"></span>
+            </div>
+            <span class="circle-mark" style="width:18px; height:18px; background:#F7768E"></span>
+          </div>
+          <!-- Стопка 3: оранжевый прямоугольник + жёлтый прямоугольник + круг -->
+          <div class="ds-stack">
+            <div class="pixel-grid" style="--cols: 2; --rows: 1;">
+              <span class="pixel" style="--x:0; --y:0; background:#FF9E64"></span>
+              <span class="pixel" style="--x:1; --y:0; background:#FF9E64"></span>
+            </div>
+            <div class="pixel-grid" style="--cols: 2; --rows: 1;">
+              <span class="pixel" style="--x:0; --y:0; background:#E0AF68"></span>
+              <span class="pixel" style="--x:1; --y:0; background:#E0AF68"></span>
+            </div>
+            <span class="circle-mark" style="width:18px; height:18px; background:#F7768E"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== OUTRO — горизонтальный плейсхолдер + back-button.
+       Большое финальное изображение во всю ширину контент-зоны
+       и под ним кнопка возврата. -->
+  <section class="outro">
+    <div class="placeholder placeholder--outro reveal-target"><img class="placeholder__img" data-src="images/case-3/99-outro" alt=""><span class="placeholder__label">add image</span></div>
+    <a href="#top" class="back-button"><span data-hover-shuffle>Back to the top</span><svg class="back-button__arrow" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 18 V3 M3.5 9.5 L10 3 L16.5 9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></a>
+  </section>
+
+  </div><!-- /.blue-zone -->
+
+  <script>
+    /* === HOVER SHUFFLE EFFECT (как у locomotive.ca) ===
+   Фиксированная длительность ~400ms независимо от длины текста.
+   За каждый тик "закрепляется" пропорциональное число символов слева. */
+(function() {
+  // Сужённый алфавит — только буквы средней ширины. Без широких (M W m w)
+      // и узких (I l i 1 j f t). Иначе во время random-фазы общая ширина текста
+      // прыгает (M в 2 раза шире i), длинные ссылки переносятся на новую строку.
+      const CHARS = 'ABCDEFGHKLNOPQRSTUVXYZabcdeghknopqrsuvxyz02345689';
+  const DURATION = 400;  // ms — общая длительность
+  const TICK_MS = 30;    // как часто меняются рандомные буквы
+  
+  function randomChar() {
+    return CHARS[Math.floor(Math.random() * CHARS.length)];
+  }
+  
+  function shuffleText(el) {
+    if (el.dataset.shuffling === '1') return;
+    const fullText = el.dataset.originalText || el.textContent;
+    if (!el.dataset.originalText) el.dataset.originalText = fullText;
+    el.dataset.shuffling = '1';
+    
+    const total = fullText.length;
+    const totalTicks = Math.ceil(DURATION / TICK_MS);   // ~13 тиков для 400ms
+    const charsPerTick = total / totalTicks;            // пропорция фиксации
+    let tick = 0;
+    
+    const interval = setInterval(() => {
+      tick++;
+      const resolved = Math.min(total, Math.floor(tick * charsPerTick));
+      let result = '';
+      for (let i = 0; i < total; i++) {
+        const ch = fullText[i];
+        if (i < resolved) result += ch;
+        else if (ch === ' ' || ch === '\u00a0' || ch.charCodeAt(0) > 127) result += ch;
+        else result += randomChar();
+      }
+      el.textContent = result;
+      if (resolved >= total) {
+        clearInterval(interval);
+        el.textContent = fullText;
+        el.dataset.shuffling = '0';
+      }
+    }, TICK_MS);
+  }
+  
+  // На мобиле перебор отключён — там нет hover, а тач-триггеры глючат.
+  if (!window.matchMedia('(max-width: 600px)').matches) {
+    document.querySelectorAll('[data-hover-shuffle]').forEach(el => {
+      // Триггер на всю плашку (ссылку/кнопку), а не на узкий span с текстом,
+      // чтобы перебор запускался при наведении на любую часть плашки.
+      const trigger = el.closest('a, button') || el;
+      trigger.addEventListener('mouseenter', () => shuffleText(el));
+    });
+  }
+})();
+
+    // === IntersectionObserver для появления при скролле ===
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-revealed');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.reveal-target').forEach(el => observer.observe(el));
+
+    // === Подсветка активного пункта + on-dark переключение ===
+    const topnav = document.querySelector('.topnav');
+    const navLinks = document.querySelectorAll('.topnav a[data-target]');
+
+    // Печать ссылок меню при загрузке страницы — typewriter-стиль
+    // как у остальных моно-меток (.summary__col-head, .placeholder__label).
+    // Класс .is-revealed на .topnav триггерит CSS-анимацию mono-typewriter
+    // на каждой <a>; stagger через nth-child задержки.
+    if (topnav) {
+      // Меню сразу видимо — добавляем .is-revealed для opacity:1.
+      requestAnimationFrame(() => topnav.classList.add('is-revealed'));
+    }
+    // Scroll-spy: на каждое пересечение пересчитываем, какая секция сейчас
+    // «в чтении» — берём самую верхнюю из пересекающих зону. Так подсветка
+    // корректно обновляется и при скролле вниз, И при скролле вверх
+    // (раньше при движении вверх активный пункт залипал).
+    const navSections = Array.from(document.querySelectorAll('section[id]'));
+    const visible = new Set();
+    const updateActiveNav = () => {
+      if (!visible.size) return;
+      // самая верхняя видимая секция (минимальный top)
+      let top = null, topY = Infinity;
+      visible.forEach(sec => {
+        const y = sec.getBoundingClientRect().top;
+        if (y < topY) { topY = y; top = sec; }
+      });
+      if (!top) return;
+      const id = top.id;
+      navLinks.forEach(a => {
+        a.classList.toggle('is-active', a.dataset.target === id);
+      });
+      if (topnav) {
+        topnav.classList.toggle('on-dark', top.dataset.bg === 'dark');
+      }
+    };
+    const navObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) visible.add(entry.target);
+        else visible.delete(entry.target);
+      });
+      updateActiveNav();
+    }, {
+      rootMargin: '-80px 0px -40% 0px',
+      threshold: 0
+    });
+    navSections.forEach(s => navObserver.observe(s));
+
+    // === Кроссфейд темы всей страницы (как cwb.fr) ===
+    // Тёмная тема активна, пока зона пересекает середину экрана: включается
+    // когда «In motion» опускается до центра, снимается когда низ зоны
+    // поднимается выше центра. Реверс при скролле вверх — автоматически.
+    // === Кроссфейд темы всей страницы (как cwb.fr) ===
+    // Тёмная тема активна, пока заголовок «In motion» находится на середине
+    // экрана или выше, а зона ещё не закончилась. Реверс вверх — автоматически.
+    const themeZone = document.querySelector('.blue-zone');
+    const themeTitle = themeZone && themeZone.querySelector('.screens__title');
+    if (themeZone && themeTitle) {
+      let ticking = false;
+      const update = () => {
+        ticking = false;
+        const mid = window.innerHeight / 2;
+        const titleTop = themeTitle.getBoundingClientRect().top;
+        const zoneBottom = themeZone.getBoundingClientRect().bottom;
+        const isDark = (titleTop <= mid) && (zoneBottom > mid);
+        document.body.classList.toggle('theme-dark', isDark);
+      };
+      window.addEventListener('scroll', () => {
+        if (!ticking) { ticking = true; requestAnimationFrame(update); }
+      }, { passive: true });
+      window.addEventListener('resize', update, { passive: true });
+      update();
+    }
+
+    // === Show/hide nav в зависимости от скролла (вариант D) ===
+    // === Back-to-the-top кнопка ===
+    // Якорь #top не существует — добавляем явный обработчик который
+    // скроллит к началу страницы и сразу прячет меню.
+    document.querySelectorAll('.back-button').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Сразу прячем меню — оно не должно висеть над hero
+      });
+    });
+
+    // Меню появляется когда читатель отскроллил ниже hero.
+    // (topnav уже объявлен выше — не дублируем const).
+    // Меню появляется когда читатель отскроллил ниже hero — через
+    // IntersectionObserver, надёжнее чем scroll-listener (не зависит от
+    // offsetHeight, не теряется при scroll-restoration, не мигает на iOS). 
+
+
+    // === Typewriter для моно-меток ===
+    // Печатает символ за символом, скорость 35ms на знак.
+    // Реальная печатная машинка — клик-клак, как ты просила.
+    //
+    // Два кейса:
+    //  1) Заголовки секций (.section__title, .screens__title) имеют
+    //     моно-метку через ::before { content: attr(data-index) }.
+    //     JS меняет data-index постепенно — браузер перерисовывает pseudo.
+    //  2) Обычные элементы (col-head, screens__num) — меняем textContent.
+    //
+    // Внутри одного reveal-target может быть несколько меток —
+    // печатаем их параллельно (каждая со своего нуля).
+
+    // === Видео: автоматический выбор расширения (.mp4 → .webm → .mov) ===
+    // У каждого <video> data-src БЕЗ расширения, JS пробует подставить
+    // расширения по очереди — первое которое загрузилось становится src.
+    // ВАЖНО: эта логика ДОЛЖНА быть до IntersectionObserver / timeupdate ниже,
+    // иначе observer попытается play() на видео без src.
+    document.querySelectorAll('video[data-src]').forEach(video => {
+      const wrap = video.closest('.video-wrap, .video-wrap--mobile');
+      const label = wrap ? wrap.querySelector('.video-wrap__label') : null;
+      const base = video.getAttribute('data-src');
+      // Порядок важен: <video> не всегда надёжно кидает error на несуществующий
+      // src, поэтому реально встречающиеся варианты (заглавный .MP4 с телефона,
+      // .mov, .MOV) пробуем РАНЬШЕ строчного mp4, которого может не быть.
+      const exts = ['MP4', 'mp4', 'mov', 'MOV', 'webm', 'WEBM'];
+
+      // Подпись пути до загрузки видео — путь и ожидаемые расширения.
+      // Когда положишь видеофайл в эту директорию с любым из расширений —
+      // оно подхватится JS автоматически.
+      if (label) {
+        label.textContent = base + '.{mp4, webm, mov}';
+      }
+
+      let i = 0;
+      let settled = false;
+      const tryNextVideo = () => {
+        if (settled || i >= exts.length) return;
+        video.src = base + '.' + exts[i++];
+        // <video> может не выстрелить error на отсутствующий файл — подстрахуемся
+        // таймером: если за 1.2с метаданные не пришли, пробуем следующее расширение.
+        setTimeout(() => {
+          if (!settled && (!video.videoWidth && video.readyState === 0)) tryNextVideo();
+        }, 1200);
+      };
+      // Когда видео успешно загрузило метаданные — добавляем .video-wrap--has-video
+      // → подпись скрывается через CSS.
+      video.addEventListener('loadedmetadata', () => {
+        settled = true;
+        if (wrap) wrap.classList.add('video-wrap--has-video');
+      });
+      video.addEventListener('error', tryNextVideo);
+      tryNextVideo();
+    });
+
+    // === VIDEO LOGIC ===
+    // IntersectionObserver — играет видео только когда в viewport, паузит когда
+    // уходит (экономит CPU/батарею). Полоска .video-progress снизу показывает
+    // длительность — растёт по timeupdate. Клик: на десктопе pause/play,
+    // на мобиле — открыть видео на весь экран (см. ниже, fullscreen-логика).
+    const isMobile = () => window.matchMedia('(max-width: 600px)').matches;
+    const videos = document.querySelectorAll('.screen-video');
+    if (videos.length) {
+      const videoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const v = entry.target;
+          if (entry.isIntersecting) {
+            v.play().catch(() => {});
+          } else {
+            v.pause();
+          }
+        });
+      }, { threshold: 0.25 });
+
+      videos.forEach(v => {
+        videoObserver.observe(v);
+
+        // Полоска длительности: ширина = доля проигранного.
+        const wrap = v.closest('.video-wrap, .video-wrap--mobile');
+        const bar = wrap ? wrap.querySelector('.video-progress__bar') : null;
+        if (bar) {
+          v.addEventListener('timeupdate', () => {
+            if (v.duration && isFinite(v.duration)) {
+              bar.style.width = (v.currentTime / v.duration * 100) + '%';
+            }
+          });
+        }
+
+        // Клик: десктоп → pause/play; мобила → fullscreen (обрабатывается
+        // обработчиком ниже, тут только десктопная ветка).
+        v.addEventListener('click', () => {
+          if (isMobile()) return; // на мобиле клик ловит fullscreen-логика
+          if (v.paused) v.play().catch(() => {});
+          else          v.pause();
+        });
+      });
+    }
+
+  
+    // === МОБИЛЬНЫЙ FULLSCREEN ВИДЕО (landscape) ===
+    // На мобиле тап по видео открывает его на весь экран, повёрнутым в
+    // горизонталь, чтобы можно было нормально рассмотреть. Крестик закрытия —
+    // в стиле наших навигационных стрелок (2px, square caps).
+    if (videos.length) {
+      // Один общий оверлей на все видео.
+      const ov = document.createElement('div');
+      ov.className = 'video-fs';
+      ov.innerHTML =
+        '<button class="video-fs__close" aria-label="Close">' +
+          '<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+            '<path d="M4 4 L16 16 M16 4 L4 16" fill="none" stroke="currentColor" ' +
+            'vector-effect="non-scaling-stroke" stroke-width="2" stroke-linecap="square"/></svg>' +
+        '</button>' +
+        '<video class="video-fs__video" loop muted playsinline></video>';
+      document.body.appendChild(ov);
+      const ovVideo = ov.querySelector('.video-fs__video');
+      const ovClose = ov.querySelector('.video-fs__close');
+
+      const openFs = (srcVideo) => {
+        // переносим текущий источник и время
+        ovVideo.src = srcVideo.currentSrc || srcVideo.src;
+        ov.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+        ovVideo.currentTime = srcVideo.currentTime || 0;
+        ovVideo.play().catch(() => {});
+      };
+      const closeFs = () => {
+        ov.classList.remove('is-open');
+        document.body.style.overflow = '';
+        ovVideo.pause();
+      };
+      ovClose.addEventListener('click', closeFs);
+      ov.addEventListener('click', (e) => { if (e.target === ov) closeFs(); });
+
+      videos.forEach(v => {
+        v.addEventListener('click', () => {
+          if (isMobile()) openFs(v);
+        });
+      });
+    }
+
+
+  
+    // === Плейсхолдеры с картинками ===
+    // У каждой <img class="placeholder__img"> есть data-src БЕЗ расширения,
+    // например data-src="images/case-1/01-context".
+    // JS пробует расширения по очереди: png → jpg → jpeg → webp.
+    // Первое которое успешно загрузилось — становится финальным src.
+    // Если ни одно не нашлось — img скрывается, виден стандартный плейсхолдер.
+    //
+    // При успехе на родительский .placeholder добавляется класс
+    // .placeholder--has-img (CSS убирает обводку, фон-hover, лейбл).
+    document.querySelectorAll('.placeholder__img[data-src]').forEach(img => {
+      const parent = img.closest('.placeholder');
+      const label = parent ? parent.querySelector('.placeholder__label') : null;
+      const base = img.getAttribute('data-src');
+      const exts = ['svg', 'png', 'jpg', 'jpeg', 'webp', 'SVG', 'PNG', 'JPG', 'JPEG', 'WEBP'];
+
+      if (label) {
+        label.textContent = base + '.{svg, png, jpg, jpeg, webp}';
+      }
+
+      let i = 0;
+      const tryNext = () => {
+        if (i >= exts.length) {
+          img.style.display = 'none';
+          return;
+        }
+        img.src = base + '.' + exts[i++];
+      };
+      img.addEventListener('load', () => {
+        if (parent) parent.classList.add('placeholder--has-img');
+      });
+      img.addEventListener('error', tryNext);
+      tryNext();
+    });
+
+  </script>
+
+</body>
+</html>
